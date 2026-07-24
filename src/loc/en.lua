@@ -52,7 +52,7 @@ return {
     },
 
     MISC = {
-        LOADED = "Blindfold {version} loaded.",
+        LOADED = "XGBlindfold {version} loaded.",
         UPDATE_AVAILABLE = "Blindfold update available: {current} to {latest}.",
     },
     -- Joker rarity, announced as a subtype ("common joker").

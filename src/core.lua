@@ -577,7 +577,7 @@ local function boot_announce()
     local t = G and G.TIMERS and G.TIMERS.REAL
     if not t or t < BOOT_DELAY then return end
     _boot_announced = true
-    speech.say(loc_line("MISC.LOADED", "Blindfold {version} loaded.",
+    speech.say(loc_line("MISC.LOADED", "XGBlindfold {version} loaded.",
         { version = BA.version or "dev" }))
     start_update_check()
 end
