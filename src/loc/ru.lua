@@ -46,6 +46,7 @@ return {
     MISC = {
         LOADED = "Blindfold {version} загружен.",
         UPDATE_AVAILABLE = "Доступно обновление Blindfold: {current} до {latest}.",
+        TUTORIAL_DONE = "Обучение завершено.",
     },
     RARITY = { COMMON = "обычный", UNCOMMON = "необычный", RARE = "редкий", LEGENDARY = "легендарный" },
     POSITION = { OF = "{index} из {total}" },
@@ -187,6 +188,7 @@ return {
         PICKED_UP   = "Взята, {name}",
         PICKUP_CANCELLED = "Отменено",
         SELECTION_CLEARED = "Выбор снят",
+        TUT_BLOCKED = "Следуйте указаниям обучения, чтобы продолжить",
         MOVED       = "Перемещена",
         PINNED_CANT_MOVE = "Закреплено, нельзя переместить",
         PLACE_LEFT    = "положить слева от {name}",
@@ -240,6 +242,7 @@ return {
         COL_CHIPS  = "фишки",
         COL_MULT   = "множитель",
         COL_PLAYED = "сыграно",
+        COL_REQS   = "требования",
     },
 
     EVENTS = {

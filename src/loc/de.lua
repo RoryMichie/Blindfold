@@ -46,6 +46,7 @@ return {
     MISC = {
         LOADED = "Blindfold {version} geladen.",
         UPDATE_AVAILABLE = "Blindfold-Update verfügbar: {current} auf {latest}.",
+        TUTORIAL_DONE = "Tutorial abgeschlossen.",
     },
     RARITY = { COMMON = "gewöhnlicher", UNCOMMON = "ungewöhnlicher", RARE = "seltener", LEGENDARY = "legendärer" },
     POSITION = { OF = "{index} von {total}" },
@@ -187,6 +188,7 @@ return {
         PICKED_UP   = "Aufgenommen, {name}",
         PICKUP_CANCELLED = "Abgebrochen",
         SELECTION_CLEARED = "Auswahl aufgehoben",
+        TUT_BLOCKED = "Folge den Tutorial-Anweisungen, um fortzufahren",
         MOVED       = "Verschoben",
         PINNED_CANT_MOVE = "Angeheftet, nicht verschiebbar",
         PLACE_LEFT    = "links von {name} ablegen",
@@ -240,6 +242,7 @@ return {
         COL_CHIPS  = "Chips",
         COL_MULT   = "Mult",
         COL_PLAYED = "gespielt",
+        COL_REQS   = "Anforderungen",
     },
 
     EVENTS = {

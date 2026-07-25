@@ -46,6 +46,7 @@ return {
     MISC = {
         LOADED = "Blindfold {version} 로드 완료.",
         UPDATE_AVAILABLE = "Blindfold 업데이트가 있습니다: {current}에서 {latest}(으)로.",
+        TUTORIAL_DONE = "튜토리얼 완료.",
     },
     RARITY = { COMMON = "일반", UNCOMMON = "고급", RARE = "희귀", LEGENDARY = "전설" },
     POSITION = { OF = "{total}개 중 {index}번째" },
@@ -187,6 +188,7 @@ return {
         PICKED_UP   = "집었음, {name}",
         PICKUP_CANCELLED = "취소됨",
         SELECTION_CLEARED = "선택 해제됨",
+        TUT_BLOCKED = "계속하려면 튜토리얼 안내를 따르세요",
         MOVED       = "이동됨",
         PINNED_CANT_MOVE = "고정되어 이동 불가",
         PLACE_LEFT    = "{name} 왼쪽에 놓기",
@@ -240,6 +242,7 @@ return {
         COL_CHIPS  = "칩",
         COL_MULT   = "배수",
         COL_PLAYED = "플레이 횟수",
+        COL_REQS   = "조건",
     },
 
     EVENTS = {

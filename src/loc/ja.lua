@@ -46,6 +46,7 @@ return {
     MISC = {
         LOADED = "Blindfold {version} を読み込みました。",
         UPDATE_AVAILABLE = "Blindfoldの更新があります：{current}から{latest}へ。",
+        TUTORIAL_DONE = "チュートリアル完了。",
     },
     RARITY = { COMMON = "コモン", UNCOMMON = "アンコモン", RARE = "レア", LEGENDARY = "レジェンダリー" },
     POSITION = { OF = "{total}枚中{index}枚目" },
@@ -187,6 +188,7 @@ return {
         PICKED_UP   = "持ち上げました、{name}",
         PICKUP_CANCELLED = "キャンセルしました",
         SELECTION_CLEARED = "選択を解除しました",
+        TUT_BLOCKED = "続行するにはチュートリアルの指示に従ってください",
         MOVED       = "移動しました",
         PINNED_CANT_MOVE = "固定されているため移動できません",
         PLACE_LEFT    = "{name}の左に置く",
@@ -240,6 +242,7 @@ return {
         COL_CHIPS  = "チップ",
         COL_MULT   = "倍率",
         COL_PLAYED = "プレイ回数",
+        COL_REQS   = "条件",
     },
 
     EVENTS = {

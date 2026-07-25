@@ -189,6 +189,14 @@ do
             return function()
                 if not (G and G.STAGES and G.STAGE == G.STAGES.RUN
                     and not G.OVERLAY_MENU and G.FUNCS and G.FUNCS[func_key]) then return end
+                -- Tutorial path enforcement, same as every other owned action
+                -- (one step DOES listen for run_info; deck view never opens
+                -- for sighted players mid-tutorial either).
+                local ok, blocked = pcall(PlayOverlay.tut_gate, listen or func_key)
+                if ok and blocked then
+                    speech.say(Message.localized(blocked):resolve())
+                    return
+                end
                 if listen then pcall(PlayOverlay.tut_listen, listen) end
                 G.FUNCS[func_key]()
             end
@@ -570,6 +578,21 @@ local function poll_update_check()
     end
 end
 
+-- Tutorial completion renders NO text — the dim lifts and Jimbo leaves
+-- (tutorial_complete flips at state_events.lua:1244, or via Skip). Watch the
+-- flip so the ending is spoken; otherwise a blind player waits for a next
+-- step that never comes.
+local _tutorial_seen = false
+local function tutorial_watch()
+    local complete = G and G.SETTINGS and G.SETTINGS.tutorial_complete
+    if G and G.OVERLAY_TUTORIAL and not complete then
+        _tutorial_seen = true
+    elseif _tutorial_seen and complete then
+        _tutorial_seen = false
+        speech.say(loc_line("MISC.TUTORIAL_DONE", "Tutorial complete."))
+    end
+end
+
 local BOOT_DELAY = 0.5
 local _boot_announced = false
 local function boot_announce()
@@ -585,6 +608,7 @@ end
 function BA.focus_tick(ctrl)
     pcall(boot_announce)
     pcall(poll_update_check)
+    pcall(tutorial_watch)
     pcall(log_state_transition)
     pcall(recover_dead_state)
     if Screens then pcall(Screens.tick) end
