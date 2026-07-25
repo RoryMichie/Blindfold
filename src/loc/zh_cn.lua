@@ -46,6 +46,7 @@ return {
     MISC = {
         LOADED = "Blindfold {version} 已加载。",
         UPDATE_AVAILABLE = "Blindfold有可用更新：{current}到{latest}。",
+        TUTORIAL_DONE = "教程完成。",
     },
     RARITY = { COMMON = "普通", UNCOMMON = "罕见", RARE = "稀有", LEGENDARY = "传奇" },
     POSITION = { OF = "第{index}个，共{total}个" },
@@ -187,6 +188,7 @@ return {
         PICKED_UP   = "已拿起，{name}",
         PICKUP_CANCELLED = "已取消",
         SELECTION_CLEARED = "已取消选择",
+        TUT_BLOCKED = "请按照教程指示继续",
         MOVED       = "已移动",
         PINNED_CANT_MOVE = "已固定，无法移动",
         PLACE_LEFT    = "放到{name}左边",
@@ -240,6 +242,7 @@ return {
         COL_CHIPS  = "筹码",
         COL_MULT   = "倍率",
         COL_PLAYED = "打出次数",
+        COL_REQS   = "要求",
     },
 
     EVENTS = {

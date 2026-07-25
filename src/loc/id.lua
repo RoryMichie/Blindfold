@@ -46,6 +46,7 @@ return {
     MISC = {
         LOADED = "Blindfold {version} dimuat.",
         UPDATE_AVAILABLE = "Pembaruan Blindfold tersedia: {current} ke {latest}.",
+        TUTORIAL_DONE = "Tutorial selesai.",
     },
     RARITY = { COMMON = "umum", UNCOMMON = "tidak umum", RARE = "langka", LEGENDARY = "legendaris" },
     POSITION = { OF = "{index} dari {total}" },
@@ -187,6 +188,7 @@ return {
         PICKED_UP   = "Diambil, {name}",
         PICKUP_CANCELLED = "Dibatalkan",
         SELECTION_CLEARED = "Pilihan dibersihkan",
+        TUT_BLOCKED = "Ikuti petunjuk tutorial untuk melanjutkan",
         MOVED       = "Dipindahkan",
         PINNED_CANT_MOVE = "Disematkan, tidak bisa dipindah",
         PLACE_LEFT    = "letakkan di kiri {name}",
@@ -240,6 +242,7 @@ return {
         COL_CHIPS  = "chip",
         COL_MULT   = "mult",
         COL_PLAYED = "dimainkan",
+        COL_REQS   = "syarat",
     },
 
     EVENTS = {

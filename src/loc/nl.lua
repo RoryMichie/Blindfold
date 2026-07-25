@@ -46,6 +46,7 @@ return {
     MISC = {
         LOADED = "Blindfold {version} geladen.",
         UPDATE_AVAILABLE = "Blindfold-update beschikbaar: {current} naar {latest}.",
+        TUTORIAL_DONE = "Tutorial voltooid.",
     },
     RARITY = { COMMON = "gewone", UNCOMMON = "ongewone", RARE = "zeldzame", LEGENDARY = "legendarische" },
     POSITION = { OF = "{index} van {total}" },
@@ -187,6 +188,7 @@ return {
         PICKED_UP   = "Opgepakt, {name}",
         PICKUP_CANCELLED = "Geannuleerd",
         SELECTION_CLEARED = "Selectie gewist",
+        TUT_BLOCKED = "Volg de instructies van de tutorial om verder te gaan",
         MOVED       = "Verplaatst",
         PINNED_CANT_MOVE = "Vastgepind, kan niet verplaatsen",
         PLACE_LEFT    = "links van {name} neerleggen",
@@ -240,6 +242,7 @@ return {
         COL_CHIPS  = "chips",
         COL_MULT   = "mult",
         COL_PLAYED = "gespeeld",
+        COL_REQS   = "vereisten",
     },
 
     EVENTS = {

@@ -46,6 +46,7 @@ return {
     MISC = {
         LOADED = "Wczytano Blindfold {version}.",
         UPDATE_AVAILABLE = "Dostępna aktualizacja Blindfold: {current} do {latest}.",
+        TUTORIAL_DONE = "Samouczek ukończony.",
     },
     RARITY = { COMMON = "pospolity", UNCOMMON = "niepospolity", RARE = "rzadki", LEGENDARY = "legendarny" },
     POSITION = { OF = "{index} z {total}" },
@@ -187,6 +188,7 @@ return {
         PICKED_UP   = "Podniesiono, {name}",
         PICKUP_CANCELLED = "Anulowano",
         SELECTION_CLEARED = "Zaznaczenie wyczyszczone",
+        TUT_BLOCKED = "Postępuj zgodnie z instrukcjami samouczka, aby kontynuować",
         MOVED       = "Przeniesiono",
         PINNED_CANT_MOVE = "Przyszpilony, nie można przenieść",
         PLACE_LEFT    = "połóż na lewo od {name}",
@@ -240,6 +242,7 @@ return {
         COL_CHIPS  = "żetony",
         COL_MULT   = "mnożnik",
         COL_PLAYED = "zagrane",
+        COL_REQS   = "wymagania",
     },
 
     EVENTS = {
