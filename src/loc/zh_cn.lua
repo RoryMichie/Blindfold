@@ -316,5 +316,6 @@ return {
         FMT_MULT_GAIN   = "加倍率播报",
         FMT_MULT_LOSS   = "减倍率播报",
         FMT_XMULT       = "乘倍率播报",
+        GRAPHICS_DISABLED = "禁用图形",
     },
 }

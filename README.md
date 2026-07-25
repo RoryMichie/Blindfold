@@ -18,6 +18,8 @@ If you would like to support my modding work, I also have a
   money, joker slots)
 - Review buffers for re-reading detail at your own pace
 - Translations for all of Balatro's languages
+- Optional disable-graphics mode that skips rendering entirely, speeding up
+  late-game scoring on slower machines
 
 ## Installation
 

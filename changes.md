@@ -1,3 +1,6 @@
+## Unreleased
+* Added a "Disable graphics" toggle to the mod settings. It stops all rendering (the screen goes black), which frees the frame budget: the game's event queue only advances once per frame, so late-game scoring runs noticeably faster on machines where heavy rendering drops the frame rate. Mouse input does not work while it is enabled; keyboard and controller navigation are unaffected.
+
 ## v1.0.6
 * Fixed various cases where the mod would allow you to complete actions that the tutorial blocked, causing various game softlocks.
 * Fixed an issue where the hand requirements column of the Poker Hands table was missing.

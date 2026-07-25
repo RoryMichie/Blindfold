@@ -316,5 +316,6 @@ return {
         FMT_MULT_GAIN   = "倍率加算の読み上げ",
         FMT_MULT_LOSS   = "倍率減算の読み上げ",
         FMT_XMULT       = "倍率乗算の読み上げ",
+        GRAPHICS_DISABLED = "グラフィックを無効化",
     },
 }

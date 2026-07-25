@@ -316,5 +316,6 @@ return {
         FMT_MULT_GAIN   = "배수 증가 알림",
         FMT_MULT_LOSS   = "배수 감소 알림",
         FMT_XMULT       = "배수 곱하기 알림",
+        GRAPHICS_DISABLED = "그래픽 비활성화",
     },
 }

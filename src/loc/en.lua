@@ -347,5 +347,6 @@ return {
         FMT_MULT_GAIN   = "Plus mult announcement",
         FMT_MULT_LOSS   = "Minus mult announcement",
         FMT_XMULT       = "Times mult announcement",
+        GRAPHICS_DISABLED = "Disable graphics",
     },
 }
