@@ -316,5 +316,6 @@ return {
         FMT_MULT_GAIN   = "Annonce du multi ajouté",
         FMT_MULT_LOSS   = "Annonce du multi retiré",
         FMT_XMULT       = "Annonce du multi multiplié",
+        GRAPHICS_DISABLED = "Désactiver les graphismes",
     },
 }

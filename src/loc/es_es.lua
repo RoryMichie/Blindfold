@@ -316,5 +316,6 @@ return {
         FMT_MULT_GAIN   = "Anuncio de multi sumado",
         FMT_MULT_LOSS   = "Anuncio de multi restado",
         FMT_XMULT       = "Anuncio de multi multiplicado",
+        GRAPHICS_DISABLED = "Desactivar gráficos",
     },
 }

@@ -316,5 +316,6 @@ return {
         FMT_MULT_GAIN   = "Aankondiging plus mult",
         FMT_MULT_LOSS   = "Aankondiging min mult",
         FMT_XMULT       = "Aankondiging keer mult",
+        GRAPHICS_DISABLED = "Graphics uitschakelen",
     },
 }

@@ -316,5 +316,6 @@ return {
         FMT_MULT_GAIN   = "Ogłaszanie dodanego mnożnika",
         FMT_MULT_LOSS   = "Ogłaszanie odjętego mnożnika",
         FMT_XMULT       = "Ogłaszanie pomnożonego mnożnika",
+        GRAPHICS_DISABLED = "Wyłącz grafikę",
     },
 }

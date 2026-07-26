@@ -316,5 +316,6 @@ return {
         FMT_MULT_GAIN   = "Pengumuman mult tambah",
         FMT_MULT_LOSS   = "Pengumuman mult kurang",
         FMT_XMULT       = "Pengumuman mult kali",
+        GRAPHICS_DISABLED = "Nonaktifkan grafis",
     },
 }

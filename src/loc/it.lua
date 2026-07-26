@@ -316,5 +316,6 @@ return {
         FMT_MULT_GAIN   = "Annuncio molt aggiunto",
         FMT_MULT_LOSS   = "Annuncio molt sottratto",
         FMT_XMULT       = "Annuncio molt moltiplicato",
+        GRAPHICS_DISABLED = "Disattiva la grafica",
     },
 }

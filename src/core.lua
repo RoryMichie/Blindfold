@@ -277,6 +277,13 @@ do
             options = { "auto" }, labels = { "SET.BACKEND_AUTO" },
             apply = function(v) speech.set_backend(v) end }
 
+        -- Disable graphics: skip the render pass entirely (the Game.draw wrap
+        -- in install()). Frees the GPU and, on machines rendering under 60
+        -- FPS, restores event-queue throughput — scoring chains stretch when
+        -- frames are slow. Navigation and speech never needed the draw pass.
+        Settings.register{ key = "graphics.disabled", type = "bool",
+            label_key = "SET.GRAPHICS_DISABLED", default = false, category = "graphics" }
+
         Settings.load()
         BA.settings = Settings
         Scoring.settings = Settings
@@ -1196,6 +1203,41 @@ function BA.install()
                 G.sort_id = self.sort_id
             end
             return r
+        end
+    end
+
+    -- 11) Disable graphics (settings toggle): skip the render pass. Draw is
+    --     near-pure output — movement, easing, sprite frames, DynaText and
+    --     the event queue all run in update — and the event queue advances at
+    --     most once per frame (event.lua:172), so reclaiming the frame budget
+    --     directly speeds up long scoring chains on machines under 60 FPS.
+    --     Two update-side couplings need care:
+    --     * G.DRAW_HASH (cursor hit-testing's candidate set) is populated
+    --       only during draw — the mouse goes dead while this is on.
+    --       Accepted: the overlays navigate logical state and activate via
+    --       UIElement:click() / G.FUNCS directly.
+    --     * node.under_overlay is stamped during draw (node.lua:92) and gates
+    --       UIElement:click (ui.lua:966); undrawn it freezes stale, so it is
+    --       cleared at click time below.
+    --     love.run never clears the backbuffer (main.lua:75-78) — the
+    --     replacement must, or present() flips garbage.
+    if Game and Game.draw then
+        local orig_game_draw = Game.draw
+        function Game:draw()
+            if BA.settings and BA.settings.value("graphics.disabled") then
+                love.graphics.clear(0, 0, 0, 1)
+                return
+            end
+            return orig_game_draw(self)
+        end
+    end
+    if UIElement and UIElement.click then
+        local orig_ui_click = UIElement.click
+        function UIElement:click()
+            if self.under_overlay and BA.settings and BA.settings.value("graphics.disabled") then
+                self.under_overlay = nil
+            end
+            return orig_ui_click(self)
         end
     end
 end

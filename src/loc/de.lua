@@ -316,5 +316,6 @@ return {
         FMT_MULT_GAIN   = "Ansage: Plus-Mult",
         FMT_MULT_LOSS   = "Ansage: Minus-Mult",
         FMT_XMULT       = "Ansage: Mal-Mult",
+        GRAPHICS_DISABLED = "Grafik deaktivieren",
     },
 }
