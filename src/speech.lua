@@ -24,6 +24,8 @@ ffi.cdef([[
     typedef struct prism_ctx prism_ctx;
     typedef struct prism_backend prism_backend;
 
+    int   CreateDirectoryW(const wchar_t* path, void* security_attributes);
+
     prism_ctx*     prism_init(void* config);
     void           prism_shutdown(prism_ctx* ctx);
     size_t         prism_registry_count(prism_ctx* ctx);
@@ -66,9 +68,55 @@ local function to_wide(s)
     return buf
 end
 
+-- ---------------------------------------------------------------------------
+-- Speech transcript: everything spoken, verbatim, one file per run under
+-- <mod>/speechlogs. Rotated from core.lua's Game:start_run hook; the file
+-- open from boot until the first run is tagged "menu". Plain io on the
+-- absolute mod path — the love.filesystem sandbox cannot follow a junction
+-- install. Files open lazily on the first line written, so a rotation that
+-- never speaks leaves no empty file behind.
+-- ---------------------------------------------------------------------------
+local slog = { dir = nil, path = nil, file = nil }
+
+function M.speechlog_rotate(tag)
+    if not slog.dir then return end
+    if slog.file then
+        pcall(function() slog.file:close() end)
+        slog.file = nil
+    end
+    tag = tostring(tag or ""):gsub("[^%w%-_]", "_"):sub(1, 48)
+    slog.path = slog.dir .. "/" .. os.date("%Y-%m-%d_%H-%M-%S")
+        .. (tag ~= "" and ("_" .. tag) or "") .. ".log"
+end
+
+local function slog_write(text)
+    if not slog.path then return end
+    if not slog.file then
+        slog.file = io.open(slog.path, "ab")
+        if not slog.file then
+            -- Unwritable (folder removed mid-session?): disable until the
+            -- next rotation instead of failing on every utterance.
+            log("speechlog: cannot open " .. slog.path)
+            slog.path = nil
+            return
+        end
+    end
+    slog.file:write(os.date("%H:%M:%S "), text, "\n")
+    slog.file:flush()
+end
+
 -- Load Prism from the mod's lib/ folder and acquire the best available
 -- backend (prism's own preference order). mod_dir is the deployed mod path.
 function M.init(mod_dir)
+    -- Transcript folder. CreateDirectoryW for the same non-ASCII-path reason
+    -- as LoadLibraryW below; an already-existing folder is a harmless no-op.
+    pcall(function()
+        local dir = mod_dir .. "/speechlogs"
+        local wide = to_wide(dir:gsub("/", "\\"))
+        if wide then ffi.C.CreateDirectoryW(wide, nil) end
+        slog.dir = dir
+    end)
+    M.speechlog_rotate("menu")
     local lib_dir = (mod_dir .. "/lib"):gsub("/", "\\")
     local ok, err = pcall(function()
         -- ffi.load routes through the ANSI LoadLibraryA, which garbles
@@ -226,6 +274,7 @@ end
 function M.say(text, interrupt)
     if type(text) ~= "string" or text == "" then return end
     log(text)
+    pcall(slog_write, text)
     if not M.loaded then return end
     local cut = interrupt == true
     pcall(function()

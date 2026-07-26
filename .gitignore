@@ -15,8 +15,9 @@ BlindfoldInstaller.exe
 # Rust build output
 installer/target/
 
-# Runtime log
+# Runtime logs and speech transcripts
 *.log
+/src/speechlogs/
 
 # OS / editor cruft
 .DS_Store
