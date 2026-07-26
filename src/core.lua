@@ -955,6 +955,24 @@ function BA.install()
         end
     end
 
+    -- 4b) One speech-transcript file per run (<mod>/speechlogs): rotate when a
+    --     run starts — new and loaded runs both come through start_run — with
+    --     the seed in the filename so a transcript can be paired with the run
+    --     that produced it. Rotated AFTER the original so the seed exists;
+    --     menu speech between runs stays in the previous run's file.
+    if Game and Game.start_run then
+        local orig_start_run = Game.start_run
+        function Game:start_run(args)
+            local ret = orig_start_run(self, args)
+            pcall(function()
+                local seed = G and G.GAME and G.GAME.pseudorandom and G.GAME.pseudorandom.seed
+                speech.speechlog_rotate("run" .. (seed and ("_" .. seed) or "")
+                    .. (args and args.savetext and "_resumed" or ""))
+            end)
+            return ret
+        end
+    end
+
     -- 5) Announce the hand-scoring sequence (and other floating chips / mult /
     --    joker feedback) by wrapping the two functions that produce it. These
     --    fire as timed events, so the spoken sequence follows the animation.
