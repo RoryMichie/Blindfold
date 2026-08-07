@@ -104,6 +104,17 @@ return {
     -- Playing cards and their modifiers.
     CARD = {
         PLAYING    = "{rank} of {suit}",
+        -- Blindatro style: modifiers lead and "of" is dropped ("red seal
+        -- holographic mult queen diamonds").
+        PLAYING_COMPACT = "{rank} {suit}",
+        -- Blindatro style speaks bare enhancement words, not the game's
+        -- center names ("mult", not "Mult Card"). Modded enhancements fall
+        -- back to their full center name.
+        ENH_SHORT  = {
+            m_bonus = "bonus", m_mult = "mult", m_wild = "wild",
+            m_glass = "glass", m_steel = "steel", m_stone = "stone",
+            m_gold = "gold", m_lucky = "lucky",
+        },
         DEBUFFED   = "debuffed",
         FACE_DOWN  = "face down",
         -- Visible tells on a face-down card (Amber Acorn): odd geometry and
@@ -348,5 +359,6 @@ return {
         FMT_MULT_LOSS   = "Minus mult announcement",
         FMT_XMULT       = "Times mult announcement",
         GRAPHICS_DISABLED = "Disable graphics",
+        CARD_STYLE        = "Blindatro-style card names",
     },
 }

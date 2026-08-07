@@ -284,6 +284,13 @@ do
         Settings.register{ key = "graphics.disabled", type = "bool",
             label_key = "SET.GRAPHICS_DISABLED", default = false, category = "graphics" }
 
+        -- Blindatro-style card names: modifiers first, no "of" ("red seal
+        -- holographic mult queen diamonds" instead of "Queen of Diamonds,
+        -- mult card, holographic, red seal"). Read wherever a playing card
+        -- is named: focus, grab, scoring play-by-play.
+        Settings.register{ key = "cards.blindatro_style", type = "bool",
+            label_key = "SET.CARD_STYLE", default = false, category = "cards" }
+
         Settings.load()
         BA.settings = Settings
         Scoring.settings = Settings

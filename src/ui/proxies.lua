@@ -11,6 +11,7 @@ local Message = require("ui.message")
 local A = require("ui.announce").A
 local Settings = require("settings.registry")
 local Cashout = require("events.cashout")
+local Loc = require("loc.manager")
 
 -- ===================== Proxy base + text extraction =====================
 local Proxy = class(Element)
@@ -828,6 +829,29 @@ local function faceless_identity(node)
     return nil
 end
 
+-- Blindatro-style identity: modifiers lead, then rank and suit, all one
+-- space-joined phrase with no "of" and no punctuation — "red seal
+-- holographic mult queen diamonds". Because the modifiers live in the
+-- label, the enhancement / edition / seal announcement slots are skipped
+-- (get_focus_announcements) or they would echo.
+local function blindatro_label(node, rank, suit)
+    local parts = {}
+    if node.seal then
+        parts[#parts + 1] = Message.localized("SEAL." .. string.upper(tostring(node.seal))):resolve()
+    end
+    local ed = Proxy.edition_word(node)
+    if ed then parts[#parts + 1] = ed:resolve() end
+    local c = node.config and node.config.center
+    if c and c.set == "Enhanced" and c.key ~= "c_base" then
+        local name = Loc.get("CARD.ENH_SHORT." .. tostring(c.key))
+            or Proxy.center_name(c) or c.name
+        if name then parts[#parts + 1] = tostring(name) end
+    end
+    parts[#parts + 1] = Message.localized("CARD.PLAYING_COMPACT",
+        { rank = rank, suit = suit }):resolve()
+    return Message.raw(table.concat(parts, " "))
+end
+
 function ProxyPlayingCard:get_label()
     local node = self.node
     -- Face down: the identity is hidden. Reading rank/suit here leaked it
@@ -847,6 +871,9 @@ function ProxyPlayingCard:get_label()
     if not base then return nil end
     local rank = Proxy.loc_str(base.value, "ranks") or tostring(base.value or "")
     local suit = Proxy.loc_str(base.suit, "suits_plural") or tostring(base.suit or "")
+    if Settings.value("cards.blindatro_style") then
+        return blindatro_label(node, rank, suit)
+    end
     return Message.localized("CARD.PLAYING", { rank = rank, suit = suit })
 end
 -- The collection's "new" badge (the red "!"): the game attaches it only on
@@ -886,17 +913,23 @@ function ProxyPlayingCard:get_focus_announcements()
     end
     -- A faceless card's label already carries one modifier; skip that slot.
     local _, consumed = faceless_identity(node)
+    local is_stone = node.ability and node.ability.effect == "Stone Card"
+    -- Blindatro style: a ranked card's label leads with ALL its modifiers
+    -- (blindatro_label), so every modifier slot is skipped. Faceless and
+    -- stone cards keep the normal per-slot path — their labels aren't the
+    -- blindatro phrase.
+    local folded = not consumed and not is_stone
+        and Settings.value("cards.blindatro_style") or false
     local c = node.config and node.config.center
     -- Stone's enhancement IS the label (rankless/suitless), so don't repeat it.
     if c and c.set == "Enhanced" and c.key ~= "c_base"
-        and consumed ~= "enhancement"
-        and not (node.ability and node.ability.effect == "Stone Card") then
+        and consumed ~= "enhancement" and not folded and not is_stone then
         local name = Proxy.center_name(c) or c.name
         if name then anns[#anns + 1] = A.enhancement(tostring(name)) end
     end
     local ed = Proxy.edition_word(node)
-    if ed and consumed ~= "edition" then anns[#anns + 1] = A.edition(ed) end
-    if node.seal and consumed ~= "seal" then
+    if ed and consumed ~= "edition" and not folded then anns[#anns + 1] = A.edition(ed) end
+    if node.seal and consumed ~= "seal" and not folded then
         anns[#anns + 1] = A.seal(Message.localized("SEAL." .. string.upper(tostring(node.seal))))
     end
     if node.debuff then anns[#anns + 1] = A.debuff() end
