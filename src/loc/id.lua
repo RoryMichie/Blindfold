@@ -90,6 +90,12 @@ return {
 
     CARD = {
         PLAYING    = "{rank} {suit}",
+        PLAYING_COMPACT = "{rank} {suit}",
+        ENH_SHORT  = {
+            m_bonus = "bonus", m_mult = "mult", m_wild = "liar",
+            m_glass = "kaca", m_steel = "baja", m_stone = "batu",
+            m_gold = "emas", m_lucky = "keberuntungan",
+        },
         DEBUFFED   = "dilemahkan",
         FACE_DOWN  = "tertutup",
         TELL_SMALL    = "kartu kecil",
@@ -106,6 +112,8 @@ return {
         SELECTED   = "dipilih",
         DESELECTED = "batal dipilih",
         TIP        = "{name}, {desc}",
+        RANDOM_MULT = "+{min} sampai +{max} {mult}, acak",
+        SEL_POS    = "pilihan {index}",
     },
     EDITION = {
         foil = "foil", holographic = "hologram",
@@ -287,6 +295,9 @@ return {
         PRESS_KEY       = "Tekan tombol keyboard atau kontroler untuk {action}",
         BOUND           = "{action} diatur ke {key}",
         CANCELLED       = "Pengaturan ulang dibatalkan",
+        CONFLICT        = "{key} sudah diatur ke {action}, pengaturan ulang dibatalkan",
+        CLICK_ORDER     = "Nilai kartu sesuai urutan pemilihan",
+        CURSOR_FOLLOW   = "Kursor game mengikuti navigasi",
         ANN_TYPE        = "Bacakan jenis",
         ANN_SUBTYPE     = "Bacakan kelangkaan",
         ANN_SELECTED    = "Bacakan status pilihan",
@@ -317,5 +328,6 @@ return {
         FMT_MULT_LOSS   = "Pengumuman mult kurang",
         FMT_XMULT       = "Pengumuman mult kali",
         GRAPHICS_DISABLED = "Nonaktifkan grafis",
+        CARD_STYLE        = "Nama kartu gaya Blindatro",
     },
 }

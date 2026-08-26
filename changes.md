@@ -1,6 +1,24 @@
 ## Unreleased
 * Added a "Disable graphics" toggle to the mod settings. It stops all rendering (the screen goes black), which frees the frame budget: the game's event queue only advances once per frame, so late-game scoring runs noticeably faster on machines where heavy rendering drops the frame rate. Mouse input does not work while it is enabled; keyboard and controller navigation are unaffected.
 
+## v1.0.9
+* fix a crash that could occur when navigating the UI when the closing animation for free card packs is playing (specifically in blind select, such as the post-skip free packs.)
+* The mod UI navigation keys now properly update the location of the cursor on screen (triggering hover tooltips, etc.)
+
+## v1.0.8
+* Moving in a direction with no UI element will no longer repeat the element you were already on.
+* Every number should now read properly in scientific notation once it becomes large enough (replicating the game's behavior and formatting exactly.)
+* Fixed extremely rare instances of lag due to logging. Only the logs for the current and previous session are now kept.
+
+## v1.0.7
+* Fixed a bug where blind rewards would be read out even when disabled for that blind.
+* The blinds tab of Run Info is now rendered properly (a row of panels for the Small Blind, Big Blind, and Boss Blind.)
+* Fixed a bug where you could not include modifier keys (control/shift/alt) when remapping keybindings.
+* Fixed a bug where you could remap multiple inputs to the same  keybinding.
+* You can now use the play hand and discard keybindings to trigger the next blind and reroll buttons in the shop respectively. The hotkey for discards remaining will quickly announce the reroll cost.
+* Fixed a bug where some cards with dynamic text (for example Misprint) would not correctly render parts of the text that changed.
+* Added an option to the mod settings menu that allows cards to be played in selection order. When enabled, selected cards also announce their selection position.
+
 ## v1.0.6
 * Fixed various cases where the mod would allow you to complete actions that the tutorial blocked, causing various game softlocks.
 * Fixed an issue where the hand requirements column of the Poker Hands table was missing.

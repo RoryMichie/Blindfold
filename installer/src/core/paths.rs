@@ -19,6 +19,11 @@ pub const LOVELY_DLL: &str = "version.dll";
 /// Everything under it is extracted into the Mods folder.
 pub const MOD_ZIP_DIR: &str = "Blindfold";
 
+/// The release asset to download, matched by EXACT name — releases will grow
+/// more zips (the upcoming mod-manager tooling publishes its own artifacts),
+/// and "first .zip in the list" would grab whichever sorts first.
+pub const MOD_ZIP_NAME: &str = "Blindfold.zip";
+
 /// Files the mod writes into the Balatro save directory (settings, rebinds,
 /// speech log). Offered for removal on uninstall; never touched otherwise.
 pub const USER_FILES: &[&str] = &[

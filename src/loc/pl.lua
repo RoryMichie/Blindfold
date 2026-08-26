@@ -90,6 +90,12 @@ return {
 
     CARD = {
         PLAYING    = "{rank} {suit}",
+        PLAYING_COMPACT = "{rank} {suit}",
+        ENH_SHORT  = {
+            m_bonus = "bonus", m_mult = "mnożnik", m_wild = "dzika",
+            m_glass = "szkło", m_steel = "stal", m_stone = "kamień",
+            m_gold = "złoto", m_lucky = "szczęście",
+        },
         DEBUFFED   = "osłabiona",
         FACE_DOWN  = "zakryta",
         TELL_SMALL    = "mała karta",
@@ -106,6 +112,8 @@ return {
         SELECTED   = "zaznaczona",
         DESELECTED = "odznaczona",
         TIP        = "{name}, {desc}",
+        RANDOM_MULT = "+{min} do +{max} {mult}, losowo",
+        SEL_POS    = "wybór {index}",
     },
     EDITION = {
         foil = "folia", holographic = "holograficzna",
@@ -287,6 +295,9 @@ return {
         PRESS_KEY       = "Naciśnij klawisz lub przycisk kontrolera dla {action}",
         BOUND           = "{action} przypisano do {key}",
         CANCELLED       = "Anulowano zmianę przypisania",
+        CONFLICT        = "{key} jest już przypisany do {action}, anulowano zmianę przypisania",
+        CLICK_ORDER     = "Punktuj karty w kolejności wyboru",
+        CURSOR_FOLLOW   = "Kursor gry podąża za nawigacją",
         ANN_TYPE        = "Ogłaszaj typ",
         ANN_SUBTYPE     = "Ogłaszaj rzadkość",
         ANN_SELECTED    = "Ogłaszaj zaznaczenie",
@@ -317,5 +328,6 @@ return {
         FMT_MULT_LOSS   = "Ogłaszanie odjętego mnożnika",
         FMT_XMULT       = "Ogłaszanie pomnożonego mnożnika",
         GRAPHICS_DISABLED = "Wyłącz grafikę",
+        CARD_STYLE        = "Nazwy kart w stylu Blindatro",
     },
 }

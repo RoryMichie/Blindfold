@@ -93,8 +93,31 @@ try {
     if (Test-Path $zip) { Remove-Item $zip -Force }
     Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip
     Write-Host "   $zip"
+
+    # Payload-only zip for Loadstone Mod Manager: just Blindfold/** — no bundled
+    # Lovely (the manager installs tools as dependencies and keeps them current)
+    # and no root README. Manual installs keep using Blindfold.zip above.
+    $managerZip = Join-Path $repo 'Blindfold-loadstone.zip'
+    if (Test-Path $managerZip) { Remove-Item $managerZip -Force }
+    Compress-Archive -Path (Join-Path $stage 'Blindfold') -DestinationPath $managerZip
+    Write-Host "   $managerZip"
 } finally {
     Remove-Item $stage -Recurse -Force
+}
+
+# --- Loadstone release manifest ----------------------------------------------------
+# loadstone-release.json describes this release to Loadstone Mod Manager: version, the
+# manager zip's sha256, and the frozen install steps. Must be built from the
+# same zip that gets uploaded — never regenerate it against a rebuilt zip.
+Write-Step "Building loadstone-release.json (Loadstone)"
+if (Get-Command loadstone -ErrorAction SilentlyContinue) {
+    & loadstone package --version $Version `
+        --manifest (Join-Path $repo 'loadstone-packages\blindfold.json') `
+        --artifact $managerZip `
+        --out (Join-Path $repo 'loadstone-release.json')
+    if ($LASTEXITCODE -ne 0) { throw "loadstone package failed" }
+} else {
+    Write-Warning "loadstone CLI not found on PATH - skipping loadstone-release.json (install: cargo install --path <loadstone repo>\crates\loadstone-cli)"
 }
 
 # --- Installer ---------------------------------------------------------------------
@@ -116,4 +139,6 @@ if (-not $NoInstaller) {
 
 Write-Host ""
 Write-Host "Done. Publish with:"
-Write-Host "  gh release create $Version Blindfold.zip BlindfoldInstaller.exe --title $Version --notes `"...`""
+Write-Host "  gh release create $Version Blindfold.zip Blindfold-loadstone.zip loadstone-release.json BlindfoldInstaller.exe --title $Version --notes `"...`""
+Write-Host "NOTE: keep Blindfold.zip FIRST in that list. Old standalone installers"
+Write-Host "download the first .zip asset on the release; upload order preserves that."

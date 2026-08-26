@@ -90,6 +90,12 @@ return {
 
     CARD = {
         PLAYING    = "{rank} de {suit}",
+        PLAYING_COMPACT = "{rank} {suit}",
+        ENH_SHORT  = {
+            m_bonus = "bonus", m_mult = "mult", m_wild = "comodín",
+            m_glass = "cristal", m_steel = "acero", m_stone = "piedra",
+            m_gold = "oro", m_lucky = "suerte",
+        },
         DEBUFFED   = "debilitada",
         FACE_DOWN  = "boca abajo",
         TELL_SMALL    = "carta pequeña",
@@ -106,6 +112,8 @@ return {
         SELECTED   = "seleccionada",
         DESELECTED = "deseleccionada",
         TIP        = "{name}, {desc}",
+        RANDOM_MULT = "+{min} a +{max} {mult}, aleatorio",
+        SEL_POS    = "selección {index}",
     },
     EDITION = {
         foil = "laminada", holographic = "holográfica",
@@ -287,6 +295,9 @@ return {
         PRESS_KEY       = "Presiona una tecla o botón de mando para {action}",
         BOUND           = "{action} asignado a {key}",
         CANCELLED       = "Reasignación cancelada",
+        CONFLICT        = "{key} ya está asignado a {action}, reasignación cancelada",
+        CLICK_ORDER     = "Puntuar cartas en orden de selección",
+        CURSOR_FOLLOW   = "El cursor del juego sigue la navegación",
         ANN_TYPE        = "Anunciar tipo",
         ANN_SUBTYPE     = "Anunciar rareza",
         ANN_SELECTED    = "Anunciar selección",
@@ -317,5 +328,6 @@ return {
         FMT_MULT_LOSS   = "Anuncio de multi restado",
         FMT_XMULT       = "Anuncio de multi multiplicado",
         GRAPHICS_DISABLED = "Desactivar gráficos",
+        CARD_STYLE        = "Nombres de cartas al estilo Blindatro",
     },
 }

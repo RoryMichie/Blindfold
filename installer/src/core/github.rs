@@ -77,8 +77,11 @@ pub fn fetch_main_commit_sha() -> Result<String, String> {
     Ok(info.sha.chars().take(7).collect())
 }
 
+/// The mod's release zip, by EXACT name (super::paths::MOD_ZIP_NAME).
+/// Releases carry other zips too as the mod-manager tooling lands, so
+/// "first .zip" is no longer a safe rule.
 pub fn find_zip_asset(assets: &[Asset]) -> Option<&Asset> {
-    assets.iter().find(|a| a.name.ends_with(".zip"))
+    assets.iter().find(|a| a.name == super::paths::MOD_ZIP_NAME)
 }
 
 #[cfg(test)]
@@ -86,20 +89,32 @@ mod tests {
     use super::*;
 
     #[test]
-    fn find_zip_asset_with_zip() {
+    fn find_zip_asset_exact_name() {
+        // Other zips ahead of it in the asset list must not win.
         let assets = vec![
             Asset {
-                name: "readme.txt".to_string(),
-                browser_download_url: "https://example.com/readme.txt".to_string(),
+                name: "ModManagerBundle.zip".to_string(),
+                browser_download_url: "https://example.com/bundle.zip".to_string(),
             },
             Asset {
-                name: "Blindfold-v0.1.0.zip".to_string(),
+                name: "Blindfold.zip".to_string(),
                 browser_download_url: "https://example.com/mod.zip".to_string(),
             },
         ];
         let result = find_zip_asset(&assets);
         assert!(result.is_some());
-        assert_eq!(result.unwrap().name, "Blindfold-v0.1.0.zip");
+        assert_eq!(result.unwrap().name, "Blindfold.zip");
+        assert_eq!(result.unwrap().browser_download_url, "https://example.com/mod.zip");
+    }
+
+    #[test]
+    fn find_zip_asset_rejects_other_zips() {
+        // A .zip that is not the exact mod asset is not a fallback.
+        let assets = vec![Asset {
+            name: "Blindfold-v0.1.0.zip".to_string(),
+            browser_download_url: "https://example.com/mod.zip".to_string(),
+        }];
+        assert!(find_zip_asset(&assets).is_none());
     }
 
     #[test]

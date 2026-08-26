@@ -4,6 +4,8 @@ game_src/
 
 # Packaged mod build output
 *.zip
+# Generated Loadstone release manifest (built with the zips, uploaded alongside)
+/loadstone-release.json
 
 # Local version stamp (deploy.ps1 / post-merge hook / build_release.ps1)
 /src/version

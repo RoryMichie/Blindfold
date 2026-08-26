@@ -133,6 +133,8 @@ return {
         SELECTED   = "selected",
         DESELECTED = "deselected",
         TIP        = "{name}, {desc}",   -- keyword hover tip: "Foil, +50 chips"
+        RANDOM_MULT = "+{min} to +{max} {mult}, random",   -- Misprint's cycling display
+        SEL_POS    = "selection {index}",   -- click-order mode: position in the selection
     },
     EDITION = {
         foil = "foil", holographic = "holographic",
@@ -329,6 +331,9 @@ return {
         PRESS_KEY       = "Press a key or controller button for {action}",
         BOUND           = "{action} bound to {key}",
         CANCELLED       = "Rebinding cancelled",
+        CONFLICT        = "{key} is already bound to {action}, rebinding cancelled",
+        CLICK_ORDER     = "Score cards in selection order",
+        CURSOR_FOLLOW   = "Move the game cursor with navigation",
         ANN_TYPE        = "Announce type",
         ANN_SUBTYPE     = "Announce rarity",
         ANN_SELECTED    = "Announce selected",

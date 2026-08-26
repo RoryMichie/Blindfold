@@ -326,7 +326,9 @@ function Proxy.center_hidden(card)
         and card.ability and (card.ability.set == "Joker" or card.ability.set == "Edition"
             or card.ability.consumeable or card.ability.set == "Voucher"
             or card.ability.set == "Booster")
-        and not (G and (card.area == G.jokers or card.area == G.consumeables)) then
+        -- card.area must be non-nil: nil == nil would false-exempt an
+        -- area-less card whenever G.consumeables doesn't exist yet.
+        and not (G and card.area and (card.area == G.jokers or card.area == G.consumeables)) then
         return "NOT_DISCOVERED"
     end
     return nil
@@ -492,6 +494,48 @@ function Proxy.card_description(card)
     if not card then return nil end
     -- Never describe a face-down card — that would reveal its hidden identity.
     if card.facing == "back" then return nil end
+    local ab = card.ability
+    -- Misprint's body is pure theater (card.lua:766): a DynaText cycling every
+    -- integer min..max, and a second one that mostly shows the Mult word but
+    -- randomly flashes 'rand()' or a '#@<rank><suit>' glitch built from the
+    -- BOTTOM card of the deck — real hidden information sighted players can
+    -- glimpse. The generic scrape read the DynaTexts' birth frames ("+0
+    -- rand()" forever), so per Brad: speak ONE churn snapshot, rolled exactly
+    -- like the render's random_element cyclers (13x Mult word + rand() + the
+    -- glitch, uniform over 15), then the explanation. Undiscovered stays on
+    -- the generic path, which speaks the game's own "?" description.
+    if ab and ab.name == "Misprint" and type(ab.extra) == "table"
+        and not Proxy.center_hidden(card) then
+        local okm, mult = pcall(localize, "k_mult")
+        mult = (okm and type(mult) == "string" and mult) or "Mult"
+        local roll = math.random(ab.extra.min or 0, ab.extra.max or 0)
+        local bottom = G and G.deck and G.deck.cards and G.deck.cards[1]
+            and G.deck.cards[#G.deck.cards]
+        local glitch = "#@" .. ((bottom and bottom.base and bottom.base.id) or 11)
+            .. ((bottom and bottom.base and bottom.base.suit:sub(1, 1)) or "D")
+        local r = math.random(15)
+        local tail = (r == 1 and "rand()") or (r == 2 and glitch) or mult
+        return "+" .. roll .. " " .. tail .. ", " .. Message.localized("CARD.RANDOM_MULT", {
+            min = tostring(ab.extra.min or 0),
+            max = tostring(ab.extra.max or 0),
+            mult = mult,
+        }):resolve()
+    end
+    -- Blueprint/Brainstorm render a Compatible/Incompatible box whose text is
+    -- ref-bound to ability.blueprint_compat_ui — filled by a draw func only
+    -- while the game's hover popup is on screen, so it reads empty for us.
+    -- Pre-sync it from the live state (Card:update keeps blueprint_compat
+    -- fresh every frame), exactly as G.FUNCS.blueprint_compat would; the
+    -- scrape then picks it up in its rendered position.
+    if ab and (ab.name == "Blueprint" or ab.name == "Brainstorm") then
+        local compat = ab.blueprint_compat
+        if compat == "compatible" or compat == "incompatible" then
+            local okc, w = pcall(localize, "k_" .. compat)
+            if okc and type(w) == "string" then
+                ab.blueprint_compat_ui = " " .. w .. " "
+            end
+        end
+    end
     local t
     if type(card.generate_UIBox_ability_table) == "function" then
         local ok, res = pcall(function() return card:generate_UIBox_ability_table() end)
@@ -804,7 +848,7 @@ local face_down_label
 local ProxyPlayingCard = class(Proxy)
 ProxyPlayingCard.type_key = "card"
 -- Position rides the deferred follow-up (card_deferred), AFTER the description.
-ProxyPlayingCard.announcement_order = { "label", "type", "selected", "enhancement", "edition", "seal", "debuff", "new", "price" }
+ProxyPlayingCard.announcement_order = { "label", "sel_pos", "type", "selected", "enhancement", "edition", "seal", "debuff", "new", "price" }
 ProxyPlayingCard.new = ctor(ProxyPlayingCard)
 -- Collection modifier cards (the seals / enhancements screens) are built on
 -- the EMPTY card front — no rank or suit renders. Their identity is the
@@ -891,13 +935,26 @@ local function new_alert(node)
     return A.new_alert()
 end
 
+-- Click-order mode (play.click_order): a selected hand card announces its
+-- position in the selection right after its name — that IS the scoring
+-- order. Replaces the plain "selected" word; nil when the mode is off, the
+-- card isn't a highlighted hand card, or it isn't tracked (caller falls back).
+local function sel_position(node)
+    if not Settings.value("play.click_order") then return nil end
+    if not (node.highlighted and G and G.hand and node.area == G.hand) then return nil end
+    for i, c in ipairs(G.hand.highlighted or {}) do
+        if c == node then return A.sel_position(i) end
+    end
+    return nil
+end
+
 function ProxyPlayingCard:get_focus_announcements()
     local node = self.node
     -- Face down: the identity is hidden, so never reveal rank/suit/modifiers —
     -- just say it's a face-down card (selection still useful; position deferred).
     if node.facing == "back" then
         local anns = { A.label(Message.localized("CARD.FACE_DOWN")), A.type(self.type_key) }
-        if node.highlighted then anns[#anns + 1] = A.selected() end
+        if node.highlighted then anns[#anns + 1] = sel_position(node) or A.selected() end
         -- Cerulean Bell's forced card is visibly raised even when face down.
         if node.ability and node.ability.forced_selection then
             anns[#anns + 1] = A.status(Message.localized("CARD.FORCED"))
@@ -907,7 +964,7 @@ function ProxyPlayingCard:get_focus_announcements()
     local label = self:get_label()
     if not label then return {} end
     local anns = { A.label(label), A.type(self.type_key) }
-    if node.highlighted then anns[#anns + 1] = A.selected() end
+    if node.highlighted then anns[#anns + 1] = sel_position(node) or A.selected() end
     if node.ability and node.ability.forced_selection then
         anns[#anns + 1] = A.status(Message.localized("CARD.FORCED"))
     end
@@ -1152,9 +1209,11 @@ local function blind_effect(cfg)
     return #parts > 0 and table.concat(parts, " ") or nil
 end
 
--- Exported for the blinds collection gallery (works on raw P_BLINDS entries).
+-- Exported for the blinds collection gallery and the run-info blinds tab
+-- (work on raw P_BLINDS entries).
 Proxy.blind_name = blind_name
 Proxy.blind_effect = blind_effect
+Proxy.blind_requirement = blind_requirement
 
 -- A skip tag's description, via the game's own builder (mirrors a card's
 -- ability_UIBox_table). get_uibox_table populates it with the right loc vars.
@@ -1210,7 +1269,12 @@ function ProxyBlind:select_announcements()
     if action then parts[#parts + 1] = action end
     local req = blind_requirement(cfg)
     if req then parts[#parts + 1] = req end
-    if cfg and type(cfg.dollars) == "number" and cfg.dollars > 0 then
+    -- The panel omits its reward row under no_blind_reward (Red Stake+
+    -- strips the Small Blind's; UI_definitions.lua:1552) — the static
+    -- config.dollars doesn't know that.
+    local mods = G and G.GAME and G.GAME.modifiers
+    local no_reward = ty and mods and mods.no_blind_reward and mods.no_blind_reward[ty]
+    if not no_reward and cfg and type(cfg.dollars) == "number" and cfg.dollars > 0 then
         parts[#parts + 1] = Message.localized("BLIND.REWARD", { dollars = tostring(cfg.dollars) }):resolve()
     end
     if #parts > 0 then anns[#anns + 1] = A.status(table.concat(parts, ", ")) end

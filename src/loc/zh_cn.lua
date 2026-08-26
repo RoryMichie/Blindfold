@@ -90,6 +90,12 @@ return {
 
     CARD = {
         PLAYING    = "{suit}{rank}",
+        PLAYING_COMPACT = "{suit}{rank}",
+        ENH_SHORT  = {
+            m_bonus = "奖励", m_mult = "倍率", m_wild = "万能",
+            m_glass = "玻璃", m_steel = "钢铁", m_stone = "石头",
+            m_gold = "黄金", m_lucky = "幸运",
+        },
         DEBUFFED   = "被削弱",
         FACE_DOWN  = "背面朝上",
         TELL_SMALL    = "小尺寸卡牌",
@@ -106,6 +112,8 @@ return {
         SELECTED   = "已选中",
         DESELECTED = "已取消选中",
         TIP        = "{name}，{desc}",
+        RANDOM_MULT = "+{min}至+{max}{mult}，随机",
+        SEL_POS    = "选择{index}",
     },
     EDITION = {
         foil = "闪箔", holographic = "镭射",
@@ -287,6 +295,9 @@ return {
         PRESS_KEY       = "请按下要分配给{action}的按键或手柄按钮",
         BOUND           = "{action}已绑定到{key}",
         CANCELLED       = "已取消重新绑定",
+        CONFLICT        = "{key}已绑定到{action}，已取消重新绑定",
+        CLICK_ORDER     = "按选择顺序计分卡牌",
+        CURSOR_FOLLOW   = "游戏光标跟随导航",
         ANN_TYPE        = "朗读类型",
         ANN_SUBTYPE     = "朗读稀有度",
         ANN_SELECTED    = "朗读选中状态",
@@ -317,5 +328,6 @@ return {
         FMT_MULT_LOSS   = "减倍率播报",
         FMT_XMULT       = "乘倍率播报",
         GRAPHICS_DISABLED = "禁用图形",
+        CARD_STYLE        = "Blindatro 风格的卡牌名称",
     },
 }

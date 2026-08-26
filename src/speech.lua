@@ -50,13 +50,62 @@ local NOT_IMPLEMENTED = 9
 local SUPPORTED_AT_RUNTIME = 0x1   -- engine actually present on this machine
 local SUPPORTS_OUTPUT = 0x20       -- backend supports prism_backend_output
 
+-- Rotate at boot: the log grows with every utterance and had reached
+-- multiple megabytes across sessions, making each synchronous append (and
+-- the antivirus scan behind it) pricier — implicated in main-thread stalls.
+-- The live file holds only the current session; the previous one is .old.
+pcall(function()
+    local info = love.filesystem.getInfo and love.filesystem.getInfo("blindfold.log")
+    if info and (info.size or 0) > 0 then
+        local data = love.filesystem.read("blindfold.log")
+        if data then love.filesystem.write("blindfold.log.old", data) end
+        love.filesystem.remove("blindfold.log")
+    end
+end)
+
+-- Log writes go through a writer THREAD: the per-utterance append was
+-- synchronous disk I/O on the main thread, and the forensic timers caught it
+-- stalling ("SLOW log append: 80ms") — the game and the screen reader hitch
+-- together when that happens. The main thread only pushes lines onto a
+-- channel; the thread does the appends. Falls back to direct appends when
+-- love.thread is unavailable.
+local LOG_THREAD = [[
+require("love.filesystem")
+local channel = love.thread.getChannel("blindfold_log")
+while true do
+    local line = channel:demand()
+    if line == false then break end
+    pcall(love.filesystem.append, "blindfold.log", line)
+end
+]]
+local _log_channel
+pcall(function()
+    if love.thread and love.thread.newThread then
+        local t = love.thread.newThread(LOG_THREAD)
+        t:start()
+        _log_channel = love.thread.getChannel("blindfold_log")
+    end
+end)
+
+local function log_line(text) return os.date("%H:%M:%S ") .. text .. "\n" end
+
+-- Synchronous append, for the rare lines that MUST be on disk before the
+-- next native call (backend-switch forensics: if the switch hard-crashes,
+-- this line being last in the log is the whole point).
+local function log_sync(text)
+    pcall(function() love.filesystem.append("blindfold.log", log_line(text)) end)
+end
+
 local function log(text)
     -- Lands at %APPDATA%/Balatro/blindfold.log
-    pcall(function()
-        love.filesystem.append("blindfold.log", os.date("%H:%M:%S ") .. text .. "\n")
-    end)
+    if _log_channel then
+        local ok = pcall(function() _log_channel:push(log_line(text)) end)
+        if ok then return end
+    end
+    log_sync(text)
 end
 M.log = log
+M.log_sync = log_sync
 
 -- UTF-8 Lua string -> null-terminated UTF-16LE buffer (for the wide Win32 API).
 local CP_UTF8 = 65001
@@ -241,17 +290,17 @@ function M.set_backend(name)
     if not M.loaded then return end
     name = name or "auto"
     if name == M.current_backend then return end
-    -- Logged BEFORE any native call: if a switch hard-crashes the game, this
-    -- is the last line in the log and names the backend being switched TO
-    -- (and the live one being switched away from).
-    log("Prism: switching to '" .. name .. "' (from '" .. tostring(M.current_backend) .. "')")
+    -- Logged SYNCHRONOUSLY before any native call: if a switch hard-crashes
+    -- the game, this is the last line in the log and names the backend being
+    -- switched TO (and the live one being switched away from).
+    log_sync("Prism: switching to '" .. name .. "' (from '" .. tostring(M.current_backend) .. "')")
     pcall(function()
         local replacement = acquire(name)
         if replacement == nil then
             log("Prism: nothing acquirable for '" .. name .. "'; keeping current backend.")
             return
         end
-        log("Prism: acquired '" .. name .. "', stopping the old backend")
+        log_sync("Prism: acquired '" .. name .. "', stopping the old backend")
         if M.backend ~= nil and replacement ~= M.backend then
             M.prism.prism_backend_stop(M.backend)
             -- Deliberately NEVER freed at runtime. A backend switch crashed
@@ -271,12 +320,29 @@ end
 
 -- Speak text. interrupt defaults to false to honor the SayTheSpire2 preference
 -- of never cutting off in-progress speech; pass true explicitly to override.
+-- Lag forensics: a prism call runs synchronously on the game's main thread —
+-- when the backend (NVDA controller, SAPI, ...) stalls, the window and the
+-- screen reader hitch TOGETHER. Log any call beyond 30ms with its duration.
+local function timer_now()
+    local ok, t = pcall(function() return love.timer.getTime() end)
+    return ok and t or nil
+end
+local function log_slow_call(t0, what, detail)
+    if not t0 then return end
+    local t1 = timer_now()
+    if t1 and (t1 - t0) > 0.03 then
+        log(string.format("SLOW prism %s: %dms%s", what,
+            math.floor((t1 - t0) * 1000 + 0.5), detail or ""))
+    end
+end
+
 function M.say(text, interrupt)
     if type(text) ~= "string" or text == "" then return end
     log(text)
     pcall(slog_write, text)
     if not M.loaded then return end
     local cut = interrupt == true
+    local t0 = timer_now()
     pcall(function()
         -- output drives speech AND braille where the backend supports it;
         -- anything but a clean OK falls through to plain speak so we still
@@ -290,10 +356,14 @@ function M.say(text, interrupt)
         end
         M.prism.prism_backend_speak(M.backend, text, cut)
     end)
+    log_slow_call(t0, "speak", " (" .. #text .. " chars)")
 end
 
 function M.silence()
-    if M.loaded then pcall(function() M.prism.prism_backend_stop(M.backend) end) end
+    if not M.loaded then return end
+    local t0 = timer_now()
+    pcall(function() M.prism.prism_backend_stop(M.backend) end)
+    log_slow_call(t0, "stop")
 end
 
 return M

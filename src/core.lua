@@ -135,6 +135,7 @@ do
         -- Above the mirror: the poker-hands listing as a 2D table (run info
         -- tab + the standalone current-hands popup).
         Overlays.register(ba_require("overlays.run_hands"))
+        Overlays.register(ba_require("overlays.run_blinds"))
         -- The deck view is an overlay menu the mirror would otherwise claim;
         -- registered above it, the bespoke layout wins while G.VIEWING_DECK.
         Overlays.register(ba_require("overlays.deck_view"))
@@ -161,13 +162,33 @@ do
         Overlays.register(ba_require("overlays.tutorial"))
         BA.overlays = Overlays
         Input.dispatcher = Overlays
+        -- Lag forensics (Brad: rapid navigation sometimes hitches the window
+        -- and the screen reader together): log any main-thread stall beyond
+        -- 30ms in the overlay machinery. Prism-call stalls log in speech.lua.
+        BA.tick_now = function()
+            local ok, t = pcall(function() return love.timer.getTime() end)
+            return ok and t or nil
+        end
+        BA.log_slow = function(t0, what)
+            if not t0 then return end
+            local t1 = BA.tick_now()
+            if t1 and (t1 - t0) > 0.03 then
+                speech.log(string.format("SLOW %s: %dms (state=%s)", what,
+                    math.floor((t1 - t0) * 1000 + 0.5), tostring(G and G.STATE)))
+            end
+        end
         Input.overlay_tick = function(cmd)
+            local kind = tostring(cmd and cmd.kind)
+            local t0 = BA.tick_now()
             local ok, res = pcall(Overlays.tick, cmd)
+            BA.log_slow(t0, "graph tick " .. kind)
+            local t1 = BA.tick_now()
             if ok then
                 BA.speak_overlay_result(res)
             else
                 speech.log("overlay tick error: " .. tostring(res))
             end
+            BA.log_slow(t1, "result speak " .. kind)
         end
         -- Direct-call actions (X / C): the guarded play/discard logic shared
         -- with the play overlay's button row. Feedback for a fired action comes
@@ -178,8 +199,21 @@ do
                 if ok and err then speech.say(Message.localized(err):resolve()) end
             end
         end
-        Input.handlers.play_hand = direct(PlayOverlay.do_play)
-        Input.handlers.discard = direct(PlayOverlay.do_discard)
+        -- In the shop, the same keys drive the shop's button row instead:
+        -- X = Next Round, C = Reroll.
+        local ShopOverlay = ba_require("overlays.shop")
+        Input.handlers.play_hand = direct(function()
+            if G and G.STATES and G.STATE == G.STATES.SHOP then
+                return ShopOverlay.do_next_round()
+            end
+            return PlayOverlay.do_play()
+        end)
+        Input.handlers.discard = direct(function()
+            if G and G.STATES and G.STATE == G.STATES.SHOP then
+                return ShopOverlay.do_reroll()
+            end
+            return PlayOverlay.do_discard()
+        end)
         -- View Deck / Run Info: direct FUNCS calls (both ignore their button
         -- arg) — deterministic on owned screens instead of riding the game's
         -- pip routing. Guarded to a live run with no menu already on top;
@@ -291,6 +325,18 @@ do
         Settings.register{ key = "cards.blindatro_style", type = "bool",
             label_key = "SET.CARD_STYLE", default = false, category = "cards" }
 
+        -- Alternative play style (a friend's request): cards score in the
+        -- order they were SELECTED, not their hand position — do_play/
+        -- do_discard "quick-drag" the clicked cards into that order.
+        Settings.register{ key = "play.click_order", type = "bool",
+            label_key = "SET.CLICK_ORDER", default = false, category = "speech" }
+
+        -- Cursor-follow: the game cursor parks on whatever the mod focuses,
+        -- so sighted co-players can follow along (native hover behavior
+        -- included). See cursor_follow.
+        Settings.register{ key = "cursor.follow", type = "bool",
+            label_key = "SET.CURSOR_FOLLOW", default = true, category = "speech" }
+
         Settings.load()
         BA.settings = Settings
         Scoring.settings = Settings
@@ -356,17 +402,31 @@ do
             local label = (action.label_key and Message.localized(action.label_key):resolve()) or action.key
             speech.say(Message.localized("SET.PRESS_KEY", { action = label }):resolve())
             Input.start_listening(function(binding)
+                -- A binding another action already holds is refused (it would
+                -- silently shadow one of the two): report the holder instead.
+                local conflict
                 if binding.pad_button then
-                    -- A gamepad press: rebind the action's controller button.
-                    Input.set_pad_binding(action.key, binding.pad_button)
-                    speech.say(Message.localized("SET.BOUND",
-                        { action = label, key = Input.pad_display(binding.pad_button) }):resolve())
+                    conflict = Input.pad_conflict(action.key, binding.pad_button)
+                    if not conflict then
+                        -- A gamepad press: rebind the action's controller button.
+                        Input.set_pad_binding(action.key, binding.pad_button)
+                        speech.say(Message.localized("SET.BOUND",
+                            { action = label, key = Input.pad_display(binding.pad_button) }):resolve())
+                    end
                 elseif binding.key == "escape" then
                     speech.say(Message.localized("SET.CANCELLED"):resolve())
                 else
-                    action.bindings = { binding }
-                    Input.save_bindings()
-                    speech.say(Message.localized("SET.BOUND", { action = label, key = binding:display() }):resolve())
+                    conflict = Input.conflict(action.key, binding)
+                    if not conflict then
+                        action.bindings = { binding }
+                        Input.save_bindings()
+                        speech.say(Message.localized("SET.BOUND", { action = label, key = binding:display() }):resolve())
+                    end
+                end
+                if conflict then
+                    local holder = (conflict.label_key and Message.localized(conflict.label_key):resolve()) or conflict.key
+                    local disp = binding.pad_button and Input.pad_display(binding.pad_button) or binding:display()
+                    speech.say(Message.localized("SET.CONFLICT", { key = disp, action = holder }):resolve())
                 end
                 -- Rebuild the screen (deferred out of the input event).
                 G.E_MANAGER:add_event(Event({ blocking = false, blockable = false,
@@ -392,6 +452,41 @@ function BA.describe_focus(node)
     return m and m:resolve() or ""
 end
 
+-- Cursor-follow (user request): move the game's own cursor to the element
+-- the mod focuses, so sighted co-players can follow along — with all native
+-- on-hover behavior (tooltips, card lift, hover sounds), because the
+-- controller's per-frame collision pass derives hover from the cursor
+-- position. In MOUSE HID mode this is impossible: set_cursor_position
+-- (controller.lua:166) polls the hardware mouse and clears focused.target
+-- EVERY frame, so a parked cursor survives less than a frame (first-attempt
+-- lesson). Instead, flip to button HID mode exactly like native controller
+-- play — the game draws its own cursor sprite on the element — and let the
+-- engine's snap block (controller.lua:291-303) do the move. A physical
+-- mouse movement flips HID back (love.mousemoved → set_HID_flags 'mouse'),
+-- so a sighted co-player can still take the cursor between navigations;
+-- kb_active is deliberately NOT latched here, keeping the legacy mouse lock
+-- out of this path.
+local function cursor_follow(ref)
+    if BA.settings and BA.settings.value("cursor.follow") == false then return end
+    local ctrl = G and G.CONTROLLER
+    if not ctrl or ref.REMOVED then return end
+    -- The backing must be a real engine Node (cards, UIElements); the mod's
+    -- structural rows have no on-screen counterpart to park on.
+    if type(ref.put_focused_cursor) ~= "function" then return end
+    pcall(function()
+        if not (ctrl.HID and ctrl.HID.controller) then
+            -- A real pad stays the gamepad; keyboard-only users get the
+            -- engine's keyboard stub (its zero axes keep update_axis safe).
+            if ctrl.GAMEPAD.object == nil then
+                ctrl:set_gamepad(ctrl.keyboard_controller)
+                ctrl.GAMEPAD.object = ctrl.keyboard_controller
+            end
+            ctrl:set_HID_flags("button")
+        end
+        ctrl:snap_to({ node = ref })
+    end)
+end
+
 -- ---------------------------------------------------------------------------
 -- Owned-overlay output: speak a dispatcher tick's result and sync what follows
 -- focus. Mirrors the legacy focus path: label first, then (for cards) the
@@ -410,8 +505,14 @@ function BA.speak_overlay_result(res)
     -- produced it.
     local ref = res.focus_ref
     if ref and type(ref) == "table" then
-        if FocusBuffers then pcall(FocusBuffers.bind_focus, ref) end
+        cursor_follow(ref)
+        if FocusBuffers then
+            local tb = BA.tick_now and BA.tick_now()
+            pcall(FocusBuffers.bind_focus, ref)
+            if BA.log_slow then BA.log_slow(tb, "focus bind") end
+        end
         if res.spoke_label and res.message and res.message ~= "" then
+            local td = BA.tick_now and BA.tick_now()
             pcall(function()
                 local m
                 if res.deferred then
@@ -424,6 +525,7 @@ function BA.speak_overlay_result(res)
                 local s = type(m) == "string" and m or (m and m.resolve and m:resolve()) or ""
                 if s ~= "" then speech.say(s) end
             end)
+            if BA.log_slow then BA.log_slow(td, "deferred build") end
         end
     end
 end
@@ -620,6 +722,19 @@ local function boot_announce()
 end
 
 function BA.focus_tick(ctrl)
+    -- Frame-gap watchdog: a long gap between consecutive frames means the
+    -- WINDOW froze, whoever caused it. A gap line with the path timers quiet
+    -- points outside the mod's instrumented code (game, GC); felt lag with NO
+    -- gap line means the window never froze and the latency is on the screen
+    -- reader's side.
+    if BA.tick_now then
+        local t = BA.tick_now()
+        if t and BA._last_frame_t and (t - BA._last_frame_t) > 0.1 then
+            speech.log(string.format("frame gap: %dms (state=%s)",
+                math.floor((t - BA._last_frame_t) * 1000 + 0.5), tostring(G and G.STATE)))
+        end
+        BA._last_frame_t = t
+    end
     pcall(boot_announce)
     pcall(poll_update_check)
     pcall(tutorial_watch)
@@ -629,12 +744,14 @@ function BA.focus_tick(ctrl)
     -- Right-stick -> buffer navigation (polled; sticks are axes, not buttons).
     if Input and Input.update_pad_axes then pcall(Input.update_pad_axes, ctrl) end
     if Overlays then
+        local t0 = BA.tick_now and BA.tick_now()
         local ok, res = pcall(Overlays.tick)
         if ok then
             BA.speak_overlay_result(res)
         else
             speech.log("overlay tick error: " .. tostring(res))
         end
+        if BA.log_slow then BA.log_slow(t0, "frame tick") end
     end
 end
 

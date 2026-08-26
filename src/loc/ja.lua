@@ -90,6 +90,12 @@ return {
 
     CARD = {
         PLAYING    = "{suit}の{rank}",
+        PLAYING_COMPACT = "{suit} {rank}",
+        ENH_SHORT  = {
+            m_bonus = "ボーナス", m_mult = "倍率", m_wild = "ワイルド",
+            m_glass = "ガラス", m_steel = "スチール", m_stone = "ストーン",
+            m_gold = "ゴールド", m_lucky = "ラッキー",
+        },
         DEBUFFED   = "弱体化",
         FACE_DOWN  = "裏向き",
         TELL_SMALL    = "小さいカード",
@@ -106,6 +112,8 @@ return {
         SELECTED   = "選択",
         DESELECTED = "選択解除",
         TIP        = "{name}、{desc}",
+        RANDOM_MULT = "+{min}～+{max}{mult}、ランダム",
+        SEL_POS    = "選択{index}",
     },
     EDITION = {
         foil = "フォイル", holographic = "ホログラフィック",
@@ -287,6 +295,9 @@ return {
         PRESS_KEY       = "{action}に割り当てるキーまたはボタンを押してください",
         BOUND           = "{action}を{key}に割り当てました",
         CANCELLED       = "割り当てをキャンセルしました",
+        CONFLICT        = "{key}は既に{action}に割り当てられています。割り当てをキャンセルしました",
+        CLICK_ORDER     = "選択した順番でカードをスコア計算",
+        CURSOR_FOLLOW   = "ゲームカーソルがナビゲーションに追従",
         ANN_TYPE        = "種類を読み上げる",
         ANN_SUBTYPE     = "レアリティを読み上げる",
         ANN_SELECTED    = "選択状態を読み上げる",
@@ -317,5 +328,6 @@ return {
         FMT_MULT_LOSS   = "倍率減算の読み上げ",
         FMT_XMULT       = "倍率乗算の読み上げ",
         GRAPHICS_DISABLED = "グラフィックを無効化",
+        CARD_STYLE        = "Blindatro風のカード名",
     },
 }

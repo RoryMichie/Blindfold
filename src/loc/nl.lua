@@ -90,6 +90,12 @@ return {
 
     CARD = {
         PLAYING    = "{suit} {rank}",
+        PLAYING_COMPACT = "{suit} {rank}",
+        ENH_SHORT  = {
+            m_bonus = "bonus", m_mult = "mult", m_wild = "wild",
+            m_glass = "glas", m_steel = "staal", m_stone = "steen",
+            m_gold = "goud", m_lucky = "geluk",
+        },
         DEBUFFED   = "verzwakt",
         FACE_DOWN  = "omgekeerd",
         TELL_SMALL    = "kleine kaart",
@@ -106,6 +112,8 @@ return {
         SELECTED   = "geselecteerd",
         DESELECTED = "gedeselecteerd",
         TIP        = "{name}, {desc}",
+        RANDOM_MULT = "+{min} tot +{max} {mult}, willekeurig",
+        SEL_POS    = "selectie {index}",
     },
     EDITION = {
         foil = "folie", holographic = "holografisch",
@@ -287,6 +295,9 @@ return {
         PRESS_KEY       = "Druk op een toets of controllerknop voor {action}",
         BOUND           = "{action} toegewezen aan {key}",
         CANCELLED       = "Opnieuw toewijzen geannuleerd",
+        CONFLICT        = "{key} is al toegewezen aan {action}, opnieuw toewijzen geannuleerd",
+        CLICK_ORDER     = "Kaarten scoren in selectievolgorde",
+        CURSOR_FOLLOW   = "Spelcursor volgt de navigatie",
         ANN_TYPE        = "Type aankondigen",
         ANN_SUBTYPE     = "Zeldzaamheid aankondigen",
         ANN_SELECTED    = "Selectie aankondigen",
@@ -317,5 +328,6 @@ return {
         FMT_MULT_LOSS   = "Aankondiging min mult",
         FMT_XMULT       = "Aankondiging keer mult",
         GRAPHICS_DISABLED = "Graphics uitschakelen",
+        CARD_STYLE        = "Kaartnamen in Blindatro-stijl",
     },
 }

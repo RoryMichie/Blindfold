@@ -90,6 +90,12 @@ return {
 
     CARD = {
         PLAYING    = "{suit} {rank}",
+        PLAYING_COMPACT = "{suit} {rank}",
+        ENH_SHORT  = {
+            m_bonus = "보너스", m_mult = "배수", m_wild = "와일드",
+            m_glass = "유리", m_steel = "강철", m_stone = "돌",
+            m_gold = "황금", m_lucky = "행운",
+        },
         DEBUFFED   = "약화됨",
         FACE_DOWN  = "뒷면",
         TELL_SMALL    = "작은 카드",
@@ -106,6 +112,8 @@ return {
         SELECTED   = "선택됨",
         DESELECTED = "선택 해제됨",
         TIP        = "{name}, {desc}",
+        RANDOM_MULT = "+{min}~+{max} {mult}, 무작위",
+        SEL_POS    = "선택 {index}",
     },
     EDITION = {
         foil = "포일", holographic = "홀로그램",
@@ -287,6 +295,9 @@ return {
         PRESS_KEY       = "{action}에 할당할 키 또는 컨트롤러 버튼을 누르세요",
         BOUND           = "{action}이(가) {key}에 할당됨",
         CANCELLED       = "재할당 취소됨",
+        CONFLICT        = "{key}은(는) 이미 {action}에 할당되어 있어 재할당이 취소됨",
+        CLICK_ORDER     = "선택한 순서대로 카드 점수 계산",
+        CURSOR_FOLLOW   = "게임 커서가 탐색을 따라 이동",
         ANN_TYPE        = "종류 읽기",
         ANN_SUBTYPE     = "희귀도 읽기",
         ANN_SELECTED    = "선택 상태 읽기",
@@ -317,5 +328,6 @@ return {
         FMT_MULT_LOSS   = "배수 감소 알림",
         FMT_XMULT       = "배수 곱하기 알림",
         GRAPHICS_DISABLED = "그래픽 비활성화",
+        CARD_STYLE        = "Blindatro 스타일 카드 이름",
     },
 }
