@@ -137,6 +137,7 @@ return {
         INFO_HANDS = "Baca: sisa giliran main", INFO_DISCARDS = "Baca: sisa buangan",
         INFO_SCORE = "Baca: skor dan target", INFO_JOKERS = "Baca: slot joker",
         INFO_MONEY = "Baca: uang",
+        INFO_BLINDS = "Baca: blind mendatang",
     },
 
     BUFFER = {
@@ -160,6 +161,8 @@ return {
         ANTE     = "Ante, {ante} dari 8",
         ROUND    = "Babak, {round}",
         JOKERS   = "{count} dari {slots} joker",
+        BLIND_TAG = "{blind}: {tag}",
+        BLIND_BOSS = "Bos: {name}",
         NOT_NOW  = "Sedang tidak tersedia",
     },
 

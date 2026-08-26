@@ -137,6 +137,7 @@ return {
         INFO_HANDS = "朗读：剩余出牌次数", INFO_DISCARDS = "朗读：剩余弃牌次数",
         INFO_SCORE = "朗读：分数与目标", INFO_JOKERS = "朗读：小丑牌栏位",
         INFO_MONEY = "朗读：资金",
+        INFO_BLINDS = "朗读：即将到来的盲注",
     },
 
     BUFFER = {
@@ -160,6 +161,8 @@ return {
         ANTE     = "底注，第{ante}关，共8关",
         ROUND    = "回合，{round}",
         JOKERS   = "小丑牌{count}张，共{slots}栏",
+        BLIND_TAG = "{blind}：{tag}",
+        BLIND_BOSS = "Boss：{name}",
         NOT_NOW  = "当前不可用",
     },
 

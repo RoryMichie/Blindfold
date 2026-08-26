@@ -137,6 +137,7 @@ return {
         INFO_HANDS = "Voorlezen: resterende handen", INFO_DISCARDS = "Voorlezen: resterende weggooibeurten",
         INFO_SCORE = "Voorlezen: score en doel", INFO_JOKERS = "Voorlezen: jokerplekken",
         INFO_MONEY = "Voorlezen: geld",
+        INFO_BLINDS = "Voorlezen: komende blinds",
     },
 
     BUFFER = {
@@ -160,6 +161,8 @@ return {
         ANTE     = "Ante, {ante} van 8",
         ROUND    = "Ronde, {round}",
         JOKERS   = "{count} van {slots} jokers",
+        BLIND_TAG = "{blind}: {tag}",
+        BLIND_BOSS = "Baas: {name}",
         NOT_NOW  = "Nu niet beschikbaar",
     },
 

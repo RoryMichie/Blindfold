@@ -137,6 +137,7 @@ return {
         INFO_HANDS = "読み上げ: 残りハンド", INFO_DISCARDS = "読み上げ: 残りディスカード",
         INFO_SCORE = "読み上げ: スコアと目標", INFO_JOKERS = "読み上げ: ジョーカー枠",
         INFO_MONEY = "読み上げ: 資金",
+        INFO_BLINDS = "読み上げ: 今後のブラインド",
     },
 
     BUFFER = {
@@ -160,6 +161,8 @@ return {
         ANTE     = "アンティ、8中{ante}",
         ROUND    = "ラウンド、{round}",
         JOKERS   = "ジョーカー{slots}枠中{count}",
+        BLIND_TAG = "{blind}: {tag}",
+        BLIND_BOSS = "ボス: {name}",
         NOT_NOW  = "現在は利用できません",
     },
 

@@ -137,6 +137,7 @@ return {
         INFO_HANDS = "Vorlesen: Verbleibende Hände", INFO_DISCARDS = "Vorlesen: Verbleibende Abwürfe",
         INFO_SCORE = "Vorlesen: Punkte und Ziel", INFO_JOKERS = "Vorlesen: Joker-Plätze",
         INFO_MONEY = "Vorlesen: Geld",
+        INFO_BLINDS = "Vorlesen: Kommende Blinds",
     },
 
     BUFFER = {
@@ -160,6 +161,8 @@ return {
         ANTE     = "Ante, {ante} von 8",
         ROUND    = "Runde, {round}",
         JOKERS   = "{count} von {slots} Jokern",
+        BLIND_TAG = "{blind}: {tag}",
+        BLIND_BOSS = "Boss: {name}",
         NOT_NOW  = "Zurzeit nicht verfügbar",
     },
 

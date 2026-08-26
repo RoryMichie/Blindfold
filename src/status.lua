@@ -74,4 +74,53 @@ function M.jokers()
     say("GAME.JOKERS", { count = #(j.cards or {}), slots = num(j.config and j.config.card_limit) })
 end
 
+
+-- The game's loc lookup, nil on anything that isn't a real string.
+local function game_loc(arg, cat)
+    local ok, v = pcall(localize, arg, cat)
+    return (ok and type(v) == "string" and v ~= "" and v ~= "ERROR") and v or nil
+end
+
+-- What is still ahead in the current ante: each undecided blind's skip tag,
+-- then the boss and its effect. Reads round_resets, which the game fills for
+-- the NEXT ante as soon as the boss falls — so from the post-boss shop this
+-- already describes the ante about to start, exactly like the game's own
+-- Run Info. Skipped and defeated blinds drop out; once nothing is left (the
+-- boss itself beaten, cash-out pending) it says not-now.
+function M.blinds()
+    local rr = in_run() and G.GAME.round_resets
+    if type(rr) ~= "table" or type(rr.blind_states) ~= "table" then return say("GAME.NOT_NOW") end
+    local function pending(t)
+        local st = rr.blind_states[t]
+        return st == "Upcoming" or st == "Select" or st == "Current"
+    end
+    local parts = {}
+    for _, t in ipairs({ "Small", "Big" }) do
+        if pending(t) then
+            local tag_key = type(rr.blind_tags) == "table" and rr.blind_tags[t]
+            local tag = tag_key and (game_loc({ type = "name_text", key = tag_key, set = "Tag" })
+                or (G.P_TAGS and G.P_TAGS[tag_key] and G.P_TAGS[tag_key].name))
+            local bkey = type(rr.blind_choices) == "table" and rr.blind_choices[t]
+            local blind = bkey and game_loc({ type = "name_text", key = bkey, set = "Blind" }) or t
+            if tag then
+                parts[#parts + 1] = line("GAME.BLIND_TAG", { blind = blind, tag = tag })
+            end
+        end
+    end
+    if pending("Boss") then
+        local bkey = type(rr.blind_choices) == "table" and rr.blind_choices.Boss
+        local cfg = bkey and G.P_BLINDS and G.P_BLINDS[bkey]
+        if cfg then
+            local name = game_loc({ type = "name_text", key = bkey, set = "Blind" }) or cfg.name or bkey
+            parts[#parts + 1] = line("GAME.BLIND_BOSS", { name = name })
+            local okp, Proxies = pcall(require, "ui.proxies")
+            local fx = okp and type(Proxies) == "table" and Proxies.Proxy and Proxies.Proxy.blind_effect
+            local eff = fx and fx(cfg)
+            if eff then parts[#parts + 1] = eff end
+        end
+    end
+    if #parts == 0 then return say("GAME.NOT_NOW") end
+    if M.say then M.say(table.concat(parts, ", ")) end
+end
+
 return M

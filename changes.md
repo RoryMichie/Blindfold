@@ -1,4 +1,5 @@
 ## Unreleased
+* Added a "Read: Upcoming Blinds" readout (Ctrl+B, controller RT+B): the skip tags of the blinds still ahead in the ante, then the boss and its effect. Like the game's Run Info, it already describes the next ante from the shop after a boss.
 * Added a "Disable graphics" toggle to the mod settings. It stops all rendering (the screen goes black), which frees the frame budget: the game's event queue only advances once per frame, so late-game scoring runs noticeably faster on machines where heavy rendering drops the frame rate. Mouse input does not work while it is enabled; keyboard and controller navigation are unaffected.
 
 ## v1.0.9

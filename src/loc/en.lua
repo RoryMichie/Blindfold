@@ -159,6 +159,7 @@ return {
         INFO_HANDS = "Read: Hands Remaining", INFO_DISCARDS = "Read: Discards Remaining",
         INFO_SCORE = "Read: Score and Goal", INFO_JOKERS = "Read: Joker Slots",
         INFO_MONEY = "Read: Money",
+        INFO_BLINDS = "Read: Upcoming Blinds",
     },
 
     -- Buffer (review-cursor) readouts.
@@ -183,6 +184,8 @@ return {
         ANTE     = "Ante, {ante} of 8",
         ROUND    = "Round, {round}",
         JOKERS   = "{count} of {slots} jokers",
+        BLIND_TAG = "{blind}: {tag}",
+        BLIND_BOSS = "Boss: {name}",
         NOT_NOW  = "Not available now",
     },
 

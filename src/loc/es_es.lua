@@ -137,6 +137,7 @@ return {
         INFO_HANDS = "Leer: manos restantes", INFO_DISCARDS = "Leer: descartes restantes",
         INFO_SCORE = "Leer: puntuación y objetivo", INFO_JOKERS = "Leer: huecos de comodín",
         INFO_MONEY = "Leer: dinero",
+        INFO_BLINDS = "Leer: próximas ciegas",
     },
 
     BUFFER = {
@@ -160,6 +161,8 @@ return {
         ANTE     = "Apuesta inicial, {ante} de 8",
         ROUND    = "Ronda, {round}",
         JOKERS   = "{count} de {slots} comodines",
+        BLIND_TAG = "{blind}: {tag}",
+        BLIND_BOSS = "Jefe: {name}",
         NOT_NOW  = "No disponible ahora",
     },
 

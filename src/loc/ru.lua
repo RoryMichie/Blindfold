@@ -137,6 +137,7 @@ return {
         INFO_HANDS = "Прочитать: оставшиеся руки", INFO_DISCARDS = "Прочитать: оставшиеся сбросы",
         INFO_SCORE = "Прочитать: счёт и цель", INFO_JOKERS = "Прочитать: слоты джокеров",
         INFO_MONEY = "Прочитать: деньги",
+        INFO_BLINDS = "Прочитать: предстоящие блайнды",
     },
 
     BUFFER = {
@@ -160,6 +161,8 @@ return {
         ANTE     = "Анте, {ante} из 8",
         ROUND    = "Раунд, {round}",
         JOKERS   = "Джокеров: {count} из {slots}",
+        BLIND_TAG = "{blind}: {tag}",
+        BLIND_BOSS = "Босс: {name}",
         NOT_NOW  = "Сейчас недоступно",
     },
 

@@ -137,6 +137,7 @@ return {
         INFO_HANDS = "읽기: 남은 핸드", INFO_DISCARDS = "읽기: 남은 버리기",
         INFO_SCORE = "읽기: 점수와 목표", INFO_JOKERS = "읽기: 조커 슬롯",
         INFO_MONEY = "읽기: 돈",
+        INFO_BLINDS = "읽기: 다가오는 블라인드",
     },
 
     BUFFER = {
@@ -160,6 +161,8 @@ return {
         ANTE     = "앤티, 8 중 {ante}",
         ROUND    = "라운드, {round}",
         JOKERS   = "조커 {slots}칸 중 {count}",
+        BLIND_TAG = "{blind}: {tag}",
+        BLIND_BOSS = "보스: {name}",
         NOT_NOW  = "지금은 확인할 수 없음",
     },
 

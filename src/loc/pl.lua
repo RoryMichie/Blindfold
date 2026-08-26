@@ -137,6 +137,7 @@ return {
         INFO_HANDS = "Odczytaj: pozostałe ręce", INFO_DISCARDS = "Odczytaj: pozostałe odrzucenia",
         INFO_SCORE = "Odczytaj: wynik i cel", INFO_JOKERS = "Odczytaj: miejsca na jokery",
         INFO_MONEY = "Odczytaj: pieniądze",
+        INFO_BLINDS = "Odczytaj: nadchodzące blindy",
     },
 
     BUFFER = {
@@ -160,6 +161,8 @@ return {
         ANTE     = "Wejście, {ante} z 8",
         ROUND    = "Runda, {round}",
         JOKERS   = "{count} z {slots} jokerów",
+        BLIND_TAG = "{blind}: {tag}",
+        BLIND_BOSS = "Boss: {name}",
         NOT_NOW  = "Obecnie niedostępne",
     },
 

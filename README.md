@@ -84,7 +84,9 @@ Start Balatro through Steam and wait for "Blindfold loaded." From there:
 - **S sells / U uses** the focused joker or consumable (controller LB / RB).
 - **Status chords** answer the common questions instantly: hands left
   (Ctrl+X, controller LT+X), discards left (Ctrl+C, LT+Y), score and goal
-  (Ctrl+S, LT+B), money (Ctrl+M, RT+X), joker slots (Ctrl+J, RT+Y).
+  (Ctrl+S, LT+B), money (Ctrl+M, RT+X), joker slots (Ctrl+J, RT+Y), and
+  what is ahead this ante — each remaining blind's skip tag and the boss
+  (Ctrl+B, RT+B), available from the shop after a boss onward.
 - **Ctrl+arrows** (controller right stick) open the review buffers:
   Left/Right switch buffers (game status, card detail), Up/Down step through
   their lines — for re-reading anything at your own pace.

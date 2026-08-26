@@ -137,6 +137,7 @@ return {
         INFO_HANDS = "Ler: mãos restantes", INFO_DISCARDS = "Ler: descartes restantes",
         INFO_SCORE = "Ler: pontuação e meta", INFO_JOKERS = "Ler: espaços de curinga",
         INFO_MONEY = "Ler: dinheiro",
+        INFO_BLINDS = "Ler: próximos blinds",
     },
 
     BUFFER = {
@@ -160,6 +161,8 @@ return {
         ANTE     = "Aposta, {ante} de 8",
         ROUND    = "Rodada, {round}",
         JOKERS   = "{count} de {slots} curingas",
+        BLIND_TAG = "{blind}: {tag}",
+        BLIND_BOSS = "Chefe: {name}",
         NOT_NOW  = "Indisponível no momento",
     },
 

@@ -112,6 +112,8 @@ do
             handler = Status.jokers, bindings = { kb.new("j", true) } }
         Input.register{ key = "info_money", label_key = "INPUT.INFO_MONEY",
             handler = Status.money, bindings = { kb.new("m", true) } }
+        Input.register{ key = "info_blinds", label_key = "INPUT.INFO_BLINDS",
+            handler = Status.blinds, bindings = { kb.new("b", true) } }
 
         -- Owned-UI overlay layer (port of Tanglebeep's key-graph framework):
         -- screens we own re-present live game state as a navigable graph; every

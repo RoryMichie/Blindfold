@@ -137,6 +137,7 @@ return {
         INFO_HANDS = "Leggi: mani rimanenti", INFO_DISCARDS = "Leggi: scarti rimanenti",
         INFO_SCORE = "Leggi: punteggio e obiettivo", INFO_JOKERS = "Leggi: spazi jolly",
         INFO_MONEY = "Leggi: soldi",
+        INFO_BLINDS = "Leggi: bui in arrivo",
     },
 
     BUFFER = {
@@ -160,6 +161,8 @@ return {
         ANTE     = "Ante, {ante} di 8",
         ROUND    = "Round, {round}",
         JOKERS   = "{count} di {slots} jolly",
+        BLIND_TAG = "{blind}: {tag}",
+        BLIND_BOSS = "Boss: {name}",
         NOT_NOW  = "Non disponibile ora",
     },
 

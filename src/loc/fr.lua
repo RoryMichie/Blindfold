@@ -137,6 +137,7 @@ return {
         INFO_HANDS = "Lire : mains restantes", INFO_DISCARDS = "Lire : défausses restantes",
         INFO_SCORE = "Lire : score et objectif", INFO_JOKERS = "Lire : emplacements de joker",
         INFO_MONEY = "Lire : argent",
+        INFO_BLINDS = "Lire : blinds à venir",
     },
 
     BUFFER = {
@@ -160,6 +161,8 @@ return {
         ANTE     = "Mise initiale, {ante} sur 8",
         ROUND    = "Manche, {round}",
         JOKERS   = "{count} jokers sur {slots}",
+        BLIND_TAG = "{blind} : {tag}",
+        BLIND_BOSS = "Boss : {name}",
         NOT_NOW  = "Indisponible pour le moment",
     },
 

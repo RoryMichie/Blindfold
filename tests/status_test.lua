@@ -98,5 +98,44 @@ Status.score()
 check(spoken and spoken:find("1,234", 1, true) and spoken:find("5,000", 1, true),
     "score readout: comma grouping like the HUD", spoken)
 
+-- --- Ctrl+B: what is ahead this ante ----------------------------------------
+_G.localize = function(arg, cat)
+    if type(arg) == "table" and arg.type == "name_text" then
+        local names = { tag_foil = "Foil Tag", tag_coupon = "Coupon Tag",
+            bl_small = "Small Blind", bl_big = "Big Blind", bl_hook = "The Hook" }
+        return names[arg.key] or "ERROR"
+    end
+    return "ERROR"
+end
+G.STATE = G.STATES.SHOP
+G.P_BLINDS = { bl_hook = { key = "bl_hook", name = "The Hook" } }
+G.GAME.round_resets = {
+    blind_states = { Small = "Upcoming", Big = "Upcoming", Boss = "Upcoming" },
+    blind_choices = { Small = "bl_small", Big = "bl_big", Boss = "bl_hook" },
+    blind_tags = { Small = "tag_foil", Big = "tag_coupon" },
+}
+spoken = nil
+Status.blinds()
+check(spoken == "Small Blind: Foil Tag, Big Blind: Coupon Tag, Boss: The Hook",
+    "fresh ante: both tags then the boss", spoken)
+
+G.GAME.round_resets.blind_states.Small = "Skipped"
+G.GAME.round_resets.blind_states.Big = "Select"
+spoken = nil
+Status.blinds()
+check(spoken == "Big Blind: Coupon Tag, Boss: The Hook",
+    "skipped small drops out; current big keeps its tag", spoken)
+
+G.GAME.round_resets.blind_states.Big = "Defeated"
+spoken = nil
+Status.blinds()
+check(spoken == "Boss: The Hook", "only the boss left", spoken)
+
+G.GAME.round_resets.blind_states.Boss = "Defeated"
+spoken = nil
+Status.blinds()
+check(spoken == Message.localized("GAME.NOT_NOW"):resolve(),
+    "everything decided: not-now", spoken)
+
 print(failures == 0 and "ALL PASS" or (failures .. " FAILURES"))
 os.exit(failures == 0 and 0 or 1)

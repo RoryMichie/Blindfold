@@ -57,6 +57,7 @@ local DEFAULT_PAD_ACTIONS = {
     ["triggerleft+leftshoulder"] = "run_info",
     ["triggerright+x"] = "info_money",
     ["triggerright+y"] = "info_jokers",
+    ["triggerright+b"] = "info_blinds",
     ["triggerright+rightshoulder"] = "view_deck",
 }
 M.PAD_ACTIONS = {}   -- the live (rebindable, persisted) map; filled in init
