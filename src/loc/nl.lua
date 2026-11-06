@@ -29,6 +29,7 @@ return {
         UP = "Omhoog", DOWN = "Omlaag", LEFT = "Links", RIGHT = "Rechts",
         SPACE = "Spatie", ESCAPE = "Escape", TAB = "Tab", BACKSPACE = "Backspace",
         CTRL = "Ctrl", SHIFT = "Shift", ALT = "Alt",
+        CMD = "Command", WIN = "Windows",
         UNBOUND = "(niet toegewezen)",
     },
 
@@ -68,6 +69,7 @@ return {
         CONFIRM_UNLOCK = "Alles vrijspelen bevestigen",
         CONFIRM_ACTION = "{action} bevestigen",
         COMPLETED      = "voltooid",
+        DISABLE_BLINDFOLD = "Als je Blindfold uitschakelt, valt de spraak weg nadat het spel opnieuw is gestart. Druk nogmaals om te bevestigen.",
     },
 
     CONTAINER = {
@@ -81,6 +83,7 @@ return {
         SHOP        = "Winkel",
         SHOP_GOODS  = "Vouchers en pakketten",
         PACK        = "Pakket",
+        OTHER = "Overige bedieningselementen",
     },
 
     PACK = {
@@ -148,6 +151,7 @@ return {
         CONSUMABLE = "Verbruiksitem",
         CASHOUT = "Uitbetaling",
         UI = "Interface",
+        SCREEN = "Scherm",
         NONE = "Geen buffers",
         EMPTY = "Buffer {buffer} is leeg",
         CURRENT = "{buffer}, {item}",
@@ -322,7 +326,15 @@ return {
         VIEW_CHANGES    = "Wijzigingen bekijken",
         OPENING_DOCS    = "Documentatie wordt geopend.",
         OPENING_CHANGES = "Wijzigingen worden geopend.",
-        SPEECH_BACKEND  = "Spraak-backend",
+        CAT_SCREEN_READERS = "Schermlezers",
+        CAT_CLIPBOARD    = "Klembord",
+        VOICE_UNAVAILABLE = "niet beschikbaar",
+        VOICE            = "Stem",
+        VOICE_NAME       = "Stem",
+        RATE             = "Snelheid",
+        VOLUME           = "Volume",
+        PITCH            = "Toonhoogte",
+        NO_VOICE_OPTIONS = "Deze spraakuitvoer heeft geen instelbare opties",
         BACKEND_AUTO    = "Auto (beste beschikbaar)",
         SCORING         = "Score",
         FMT_CHIPS_GAIN  = "Aankondiging gewonnen chips",

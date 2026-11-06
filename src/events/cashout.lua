@@ -11,8 +11,26 @@
 -- cascade begins (same pattern as events/scoring.lua).
 local require = ...
 local Message = require("ui.message")
+local Num = require("ui.num")
 
-local M = { rows = {}, total = nil, say = nil }
+local M = { rows = {}, total = nil, hidden_text = nil, say = nil }
+
+-- Steamodded's compact cash-out draws only the first 7 rows (counting them in
+-- the global total_cashout_rows, reset per round) and adds one "...and N more"
+-- line. Rows it won't draw aren't spoken or listed; that line is, instead.
+local COMPACT_ROWS = 7
+
+local function speak_queued(line)
+    if not (M.say and type(line) == "string" and line ~= "") then return end
+    if G and G.E_MANAGER and Event then
+        G.E_MANAGER:add_event(Event({
+            trigger = "immediate",
+            func = function() M.say(line); return true end,
+        }))
+    else
+        M.say(line)
+    end
+end
 
 -- Joker / tag rows carry their own name; resolved at record time while
 -- config.card / config.tag are live.
@@ -39,15 +57,34 @@ end
 -- it resets a fresh breakdown); 'bottom' carries the total.
 function M.on_row(config)
     if type(config) ~= "table" then return end
-    if config.name == "blind1" then M.rows = {}; M.total = nil end
-    if config.name == "bottom" then M.total = config.dollars; return end
+    if config.name == "blind1" then M.rows = {}; M.total = nil; M.hidden_text = nil end
+    local drawn = rawget(_G, "total_cashout_rows")
+    if config.name == "bottom" then
+        M.total = config.dollars
+        -- (The game queues its "...and N more" line just before this row.)
+        if type(drawn) == "number" and drawn > COMPACT_ROWS then
+            local ok, s = pcall(localize, { type = "variable", key = "cashout_hidden",
+                vars = { drawn - COMPACT_ROWS } })
+            if ok and type(s) == "string" and s ~= "" and s ~= "ERROR" then
+                M.hidden_text = s
+                speak_queued(s)
+            end
+        end
+        return
+    end
+    -- Our wrap runs before the original, which counts this row first.
+    if type(drawn) == "number" and drawn + 1 > COMPACT_ROWS then return end
     local n = config.name or ""
     local d = config.dollars
     -- Keep blind1 even at $0 (the Mr. Bones save); every other source needs a
     -- nonzero amount to be worth a line.
+    local amount = Num.to_n(d)
     if n == "blind1" then
-        if (type(d) ~= "number" or d == 0) and not config.saved then return end
-    elseif type(d) ~= "number" or d == 0 then
+        -- Always drawn, reward or not (a stake whose small blind pays
+        -- nothing still shows the beaten blind's row): "Blind reward, 0
+        -- dollars" — or Mr. Bones' save.
+        if not amount and not config.saved then return end
+    elseif not amount or amount == 0 then
         return
     end
     local row = {
@@ -58,18 +95,8 @@ function M.on_row(config)
 
     -- Speak the row when it lands on screen (composed now, spoken from the
     -- event queue in step with the animation).
-    if M.say and G and G.E_MANAGER and Event then
-        local ok, line = pcall(M.summary, row)
-        if ok and type(line) == "string" and line ~= "" then
-            G.E_MANAGER:add_event(Event({
-                trigger = "immediate",
-                func = function()
-                    M.say(line)
-                    return true
-                end,
-            }))
-        end
-    end
+    local ok, line = pcall(M.summary, row)
+    if ok then speak_queued(line) end
 end
 
 -- One-line summary for a breakdown row (the browsable buffer item). Counts /

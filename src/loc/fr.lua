@@ -29,6 +29,7 @@ return {
         UP = "Haut", DOWN = "Bas", LEFT = "Gauche", RIGHT = "Droite",
         SPACE = "Espace", ESCAPE = "Échap", TAB = "Tab", BACKSPACE = "Retour arrière",
         CTRL = "Ctrl", SHIFT = "Maj", ALT = "Alt",
+        CMD = "Commande", WIN = "Windows",
         UNBOUND = "(non assigné)",
     },
 
@@ -68,6 +69,7 @@ return {
         CONFIRM_UNLOCK = "Confirmer tout débloquer",
         CONFIRM_ACTION = "Confirmer {action}",
         COMPLETED      = "terminé",
+        DISABLE_BLINDFOLD = "Désactiver Blindfold coupe sa voix après le redémarrage du jeu. Appuyez à nouveau pour confirmer.",
     },
 
     CONTAINER = {
@@ -81,6 +83,7 @@ return {
         SHOP        = "Boutique",
         SHOP_GOODS  = "Coupons et boosters",
         PACK        = "Booster",
+        OTHER = "Autres commandes",
     },
 
     PACK = {
@@ -148,6 +151,7 @@ return {
         CONSUMABLE = "Consommable",
         CASHOUT = "Encaissement",
         UI = "Interface",
+        SCREEN = "Écran",
         NONE = "Aucun tampon",
         EMPTY = "Le tampon {buffer} est vide",
         CURRENT = "{buffer}, {item}",
@@ -322,7 +326,15 @@ return {
         VIEW_CHANGES    = "Voir les modifications",
         OPENING_DOCS    = "Ouverture de la documentation.",
         OPENING_CHANGES = "Ouverture des modifications.",
-        SPEECH_BACKEND  = "Moteur vocal",
+        CAT_SCREEN_READERS = "Lecteurs d'écran",
+        CAT_CLIPBOARD    = "Presse-papiers",
+        VOICE_UNAVAILABLE = "indisponible",
+        VOICE            = "Voix",
+        VOICE_NAME       = "Voix",
+        RATE             = "Vitesse",
+        VOLUME           = "Volume",
+        PITCH            = "Hauteur",
+        NO_VOICE_OPTIONS = "Ce moteur de synthèse vocale n'a aucune option réglable",
         BACKEND_AUTO    = "Auto (meilleur disponible)",
         SCORING         = "Score",
         FMT_CHIPS_GAIN  = "Annonce des jetons gagnés",

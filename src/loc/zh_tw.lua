@@ -29,6 +29,7 @@ return {
         UP = "上", DOWN = "下", LEFT = "左", RIGHT = "右",
         SPACE = "空白鍵", ESCAPE = "Esc", TAB = "Tab", BACKSPACE = "退格鍵",
         CTRL = "Ctrl", SHIFT = "Shift", ALT = "Alt",
+        CMD = "Command", WIN = "Windows",
         UNBOUND = "（未綁定）",
     },
 
@@ -68,6 +69,7 @@ return {
         CONFIRM_UNLOCK = "確認全部解鎖",
         CONFIRM_ACTION = "確認{action}",
         COMPLETED      = "已完成",
+        DISABLE_BLINDFOLD = "關閉 Blindfold 後，遊戲重新啟動時語音將被停用。再按一次以確認。",
     },
 
     CONTAINER = {
@@ -81,6 +83,7 @@ return {
         SHOP        = "商店",
         SHOP_GOODS  = "禮券與擴充包",
         PACK        = "擴充包",
+        OTHER = "其他控制項",
     },
 
     PACK = {
@@ -148,6 +151,7 @@ return {
         CONSUMABLE = "消耗牌",
         CASHOUT = "結算",
         UI = "介面",
+        SCREEN = "螢幕",
         NONE = "沒有緩衝區",
         EMPTY = "{buffer}緩衝區為空",
         CURRENT = "{buffer}，{item}",
@@ -322,7 +326,15 @@ return {
         VIEW_CHANGES    = "檢視更新內容",
         OPENING_DOCS    = "正在開啟文件。",
         OPENING_CHANGES = "正在開啟更新內容。",
-        SPEECH_BACKEND  = "語音後端",
+        CAT_SCREEN_READERS = "螢幕閱讀器",
+        CAT_CLIPBOARD    = "剪貼簿",
+        VOICE_UNAVAILABLE = "無法使用",
+        VOICE            = "語音",
+        VOICE_NAME       = "聲音",
+        RATE             = "語速",
+        VOLUME           = "音量",
+        PITCH            = "音調",
+        NO_VOICE_OPTIONS = "此語音引擎沒有可調整的選項",
         BACKEND_AUTO    = "自動（最佳可用）",
         SCORING         = "計分",
         FMT_CHIPS_GAIN  = "獲得籌碼播報",

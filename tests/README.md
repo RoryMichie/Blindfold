@@ -21,9 +21,15 @@ or one suite by hand (the optional argument is the repo root, default `.`):
 | `refresh_test.lua` | `refresh_identity`: same-screen rebuilds re-announce the kept cursor |
 | `table_test.lua` | the poker-hands 2D table (full-row primary, header crossings, column walks) |
 | `blinds_test.lua` | the run-info blinds row (panel readouts, reward gate, fallback drop) |
-| `rebind_test.lua` | rebind capture (modifier combos, bare modifiers) and binding conflicts |
+| `rebind_test.lua` | rebind capture (modifier combos incl. Command, bare modifiers), binding conflicts, the per-platform primary modifier, saved Command bindings |
 | `click_order_test.lua` | click-order play/discard reordering + the "selection N" announcement |
-| `desc_test.lua` | custom card bodies: Misprint churn+range, Blueprint/Brainstorm compat |
+| `desc_test.lua` | custom card bodies: Misprint churn+range, Blueprint/Brainstorm compat; description builds dispose their spawned DynaTexts (issue #2) |
 | `status_test.lua` | Ctrl+letter status readouts incl. shop reroll cost and naneinf parity |
 | `fmt_test.lua` | scoring verbosity styles, popup normalization, HUD number parity |
 | `events_test.lua` | run-event dispatcher: group toggles, always-on history, history cap |
+| `joker_display_test.lua` | JokerDisplay readouts: visible box, colour-only units through the scoring formatter, hidden/absent silent |
+| `mods_menu_test.lua` | Steamodded Mods menu rows (card, checkbox, config named per mod); Blindfold's own checkbox needs a confirming second press to turn off |
+| `gallery_test.lua` | blind/tag gallery claims the collection pages (vanilla and Steamodded layouts) but not Run Info's Blinds tab |
+| `cashout_test.lua` | cash-out rows: all spoken in vanilla; under Steamodded's compact cash-out only the drawn 7, then its "...and N more" line |
+| `run_select_test.lua` | Steamodded New Run screen: inert on vanilla, deck grid rows/columns, selection, page cycle, summary; win-sticker stake names under both sticker maps |
+| `host_test.lua` | hot-reload hooks: one trampoline per function, re-pointed per generation, other mods' wraps survive |

@@ -29,6 +29,7 @@ return {
         UP = "上", DOWN = "下", LEFT = "左", RIGHT = "右",
         SPACE = "スペース", ESCAPE = "Escape", TAB = "Tab", BACKSPACE = "Backspace",
         CTRL = "Ctrl", SHIFT = "Shift", ALT = "Alt",
+        CMD = "コマンド", WIN = "Windows",
         UNBOUND = "（未割り当て）",
     },
 
@@ -68,6 +69,7 @@ return {
         CONFIRM_UNLOCK = "全アンロックを確認",
         CONFIRM_ACTION = "{action}を確認",
         COMPLETED      = "クリア済み",
+        DISABLE_BLINDFOLD = "Blindfoldをオフにすると、ゲームの再起動後に読み上げが止まります。もう一度押すと確定します。",
     },
 
     CONTAINER = {
@@ -81,6 +83,7 @@ return {
         SHOP        = "ショップ",
         SHOP_GOODS  = "バウチャーとパック",
         PACK        = "パック",
+        OTHER = "その他の操作",
     },
 
     PACK = {
@@ -148,6 +151,7 @@ return {
         CONSUMABLE = "消費アイテム",
         CASHOUT = "キャッシュアウト",
         UI = "UI",
+        SCREEN = "画面",
         NONE = "バッファなし",
         EMPTY = "{buffer}バッファは空です",
         CURRENT = "{buffer}、{item}",
@@ -322,7 +326,15 @@ return {
         VIEW_CHANGES    = "変更履歴を表示",
         OPENING_DOCS    = "ドキュメントを開いています。",
         OPENING_CHANGES = "変更履歴を開いています。",
-        SPEECH_BACKEND  = "音声バックエンド",
+        CAT_SCREEN_READERS = "スクリーンリーダー",
+        CAT_CLIPBOARD    = "クリップボード",
+        VOICE_UNAVAILABLE = "利用不可",
+        VOICE            = "音声",
+        VOICE_NAME       = "声",
+        RATE             = "速度",
+        VOLUME           = "音量",
+        PITCH            = "高さ",
+        NO_VOICE_OPTIONS = "この音声エンジンには調整できる項目がありません",
         BACKEND_AUTO    = "自動（利用可能な最適）",
         SCORING         = "スコア",
         FMT_CHIPS_GAIN  = "獲得チップの読み上げ",

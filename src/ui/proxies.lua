@@ -12,6 +12,8 @@ local A = require("ui.announce").A
 local Settings = require("settings.registry")
 local Cashout = require("events.cashout")
 local Loc = require("loc.manager")
+local Num = require("ui.num")
+local Hints = require("api.hints")
 
 -- ===================== Proxy base + text extraction =====================
 local Proxy = class(Element)
@@ -25,10 +27,14 @@ local SKIP = { ["<"] = true, [">"] = true, [""] = true, ["[UI ERROR]"] = true }
 local function is_skip(s) return s == nil or SKIP[s] end
 
 -- Depth-first walk of a UIElement subtree, never descending into `exclude`.
+-- A mod's hints (api/hints): a hidden node is skipped with its subtree; a
+-- node carrying its own text stands for its subtree (the visitors read it).
 local function walk(node, exclude, visit, depth)
     depth = depth or 0
     if not node or node == exclude or depth > 14 then return end
+    if Hints.hidden(node) then return end
     visit(node)
+    if Hints.text(node) then return end
     local kids = node.children
     if kids then for _, c in ipairs(kids) do walk(c, exclude, visit, depth + 1) end end
 end
@@ -79,7 +85,10 @@ function Proxy.static_text(node, exclude)
     local parts = {}
     walk(node, exclude, function(n)
         local c = n.config
-        if c and n.UIT == G.UIT.T and not is_ref_bound(c) then
+        local ht = Hints.text(n)
+        if ht then
+            parts[#parts + 1] = ht
+        elseif c and n.UIT == G.UIT.T and not is_ref_bound(c) then
             local t = literal_text(c)
             if t and not is_skip(t) then parts[#parts + 1] = t end
         end
@@ -106,6 +115,34 @@ function Proxy.value_text(node, exclude)
     return #parts > 0 and table.concat(parts, " ") or nil
 end
 
+-- All rendered text in READING order: literal and ref-bound T nodes and
+-- DynaText objects as they appear. For running text (dialogue, text panels),
+-- where a coloured or animated word mid-sentence is a DynaText:
+-- static_text-then-value_text would move it to the end ("Welcome to !
+-- Cryptid"). Control labels keep all_text's caption-then-value order.
+function Proxy.ordered_text(node, exclude)
+    local parts = {}
+    walk(node, exclude, function(n)
+        local c = n.config
+        if not c then return end
+        local t = Hints.text(n)
+        if t then
+            -- a mod's text for an icon / sprite (api/hints)
+        elseif n.UIT == G.UIT.T then
+            if is_ref_bound(c) then
+                local v = c.ref_table[c.ref_value]
+                t = v ~= nil and tostring(v) or nil
+            else
+                t = literal_text(c)
+            end
+        elseif n.UIT == G.UIT.O and c.object and type(c.object.string) == "string" then
+            t = c.object.string
+        end
+        if t and not is_skip(t) then parts[#parts + 1] = t end
+    end)
+    return #parts > 0 and table.concat(parts, " ") or nil
+end
+
 -- Some cycles carry a raw option value that isn't meaningful spoken aloud,
 -- keyed by the cycle's opt_callback. The stake selector's options are stake
 -- levels (1..8); speak the localized stake name ("White Stake") instead.
@@ -116,6 +153,17 @@ local CYCLE_VALUE_FORMAT = {
         local center = n and pool and pool[n]
         if center and center.key then
             local ok, name = pcall(localize, { type = "name_text", set = "Stake", key = center.key })
+            if ok and type(name) == "string" and name ~= "" then return name end
+        end
+        return tostring(v)
+    end,
+    -- The deck selectors' options are internal names (vanilla "Red Deck",
+    -- English) or keys (Steamodded "b_red"); speak what the panel renders:
+    -- the viewed deck's localized name, or "Locked" (Back:get_name).
+    change_viewed_back = function(v)
+        local back = G and G.GAME and G.GAME.viewed_back
+        if back and back.get_name then
+            local ok, name = pcall(back.get_name, back)
             if ok and type(name) == "string" and name ~= "" then return name end
         end
         return tostring(v)
@@ -146,24 +194,84 @@ end
 local function deck_description()
     local back = G and G.GAME and G.GAME.viewed_back
     if not back or not back.generate_UI then return nil end
-    local ok, def = pcall(function() return back:generate_UI() end)
-    if not ok or type(def) ~= "table" then return nil end
-    local parts = {}
-    Proxy.collect_def_text(def, parts)
-    return #parts > 0 and table.concat(parts, " ") or nil
+    return Proxy.with_built(function() return back:generate_UI() end, function(def)
+        if type(def) ~= "table" then return nil end
+        local parts = {}
+        Proxy.collect_def_text(def, parts)
+        return #parts > 0 and table.concat(parts, " ") or nil
+    end)
+end
+
+-- A stake's effect text by key ("stake_red"), from its loc description.
+function Proxy.stake_text(key)
+    if type(key) ~= "string" then return nil end
+    return Proxy.with_built(function()
+        local nodes = {}
+        localize({ type = "descriptions", key = key, set = "Stake", nodes = nodes })
+        return nodes
+    end, function(nodes)
+        if not nodes then return nil end
+        local parts = {}
+        Proxy.collect_def_text(nodes, parts)
+        return #parts > 0 and table.concat(parts, " ") or nil
+    end)
+end
+
+-- Any center's description by its own loc entry, with the variables its
+-- loc_vars supplies (a mod object shown face-down, e.g. Card Sleeves'
+-- sleeves on the New Run page, whose text varies with the chosen deck).
+function Proxy.center_text(center)
+    if type(center) ~= "table" or not center.key or not center.set then return nil end
+    -- Steamodded objects describe themselves through generate_ui (what their
+    -- hovers render, unlock requirement included while locked).
+    if type(center.generate_ui) == "function" then
+        local text = Proxy.with_built(function()
+            local nodes, full = {}, { no_styled_name = true }
+            center:generate_ui({}, nil, nodes, nil, full)
+            return nodes
+        end, function(nodes)
+            if type(nodes) ~= "table" then return nil end
+            local parts = {}
+            Proxy.collect_def_text(nodes, parts)
+            return #parts > 0 and table.concat(parts, " ") or nil
+        end)
+        if text then return text end
+    end
+    return Proxy.with_built(function()
+        local res = {}
+        if type(center.loc_vars) == "function" then
+            local ok, r = pcall(center.loc_vars, center, {}, nil)
+            if ok and type(r) == "table" then res = r end
+        end
+        local nodes = {}
+        localize({ type = "descriptions", key = res.key or center.key, set = res.set or center.set,
+            nodes = nodes, vars = res.vars or {} })
+        return nodes
+    end, function(nodes)
+        if type(nodes) ~= "table" then return nil end
+        local parts = {}
+        Proxy.collect_def_text(nodes, parts)
+        return #parts > 0 and table.concat(parts, " ") or nil
+    end)
+end
+
+-- A deck's preview text by center (its effect, or its unlock requirement
+-- while locked) — the same Back:generate_UI the selectors render.
+function Proxy.back_text(center)
+    if type(center) ~= "table" or type(Back) ~= "table" then return nil end
+    return Proxy.with_built(function() return Back(center):generate_UI() end, function(def)
+        if type(def) ~= "table" then return nil end
+        local parts = {}
+        Proxy.collect_def_text(def, parts)
+        return #parts > 0 and table.concat(parts, " ") or nil
+    end)
 end
 
 local function stake_description()
     local n = G and G.viewed_stake
     local pool = G and G.P_CENTER_POOLS and G.P_CENTER_POOLS.Stake
     local center = n and pool and pool[n]
-    if not center or not center.key then return nil end
-    local nodes = {}
-    local ok = pcall(localize, { type = "descriptions", key = center.key, set = "Stake", nodes = nodes })
-    if not ok then return nil end
-    local parts = {}
-    Proxy.collect_def_text(nodes, parts)
-    return #parts > 0 and table.concat(parts, " ") or nil
+    return center and Proxy.stake_text(center.key) or nil
 end
 
 local CYCLE_DESCRIPTION = {
@@ -183,19 +291,11 @@ function Proxy.cycle_description(node)
     return fn and fn() or nil
 end
 
--- Whether the focused selector's current option is locked. A locked deck still
--- cycles into view but shows its unlock requirement instead of its effect, so we
--- flag the locked state for context. (Stakes on the selector are all
--- selectable, so there's nothing to flag.)
-local function deck_locked()
-    local back = G and G.GAME and G.GAME.viewed_back
-    local center = back and back.effect and back.effect.center
-    return center ~= nil and not center.unlocked
-end
-
-local CYCLE_LOCKED = {
-    change_viewed_back = deck_locked,
-}
+-- Whether the focused selector's current option is locked, for selectors
+-- whose VALUE doesn't already say so. (A locked deck needs no flag: its
+-- value is the panel's own "Locked" — see CYCLE_VALUE_FORMAT. Stakes on the
+-- selector are all selectable.)
+local CYCLE_LOCKED = {}
 
 function Proxy.cycle_locked(node)
     local args
@@ -268,6 +368,22 @@ function Proxy.center_name(center)
     return entry and entry.name
 end
 
+-- The name a card's own ability box renders (its name line), for centers
+-- whose name isn't a plain descriptions entry: booster packs (vanilla's and
+-- modded ones, named through their group), and anything a mod names with a
+-- custom name_key. Built through with_ability_table, so nothing leaks.
+function Proxy.rendered_name(card)
+    if not (card and type(card.generate_UIBox_ability_table) == "function") then return nil end
+    if card.facing == "back" then return nil end
+    return Proxy.with_ability_table(card, function(t)
+        if type(t) ~= "table" or type(t.name) ~= "table" then return nil end
+        local parts = {}
+        Proxy.collect_def_text(t.name, parts)
+        local s = table.concat(parts, " "):gsub("^%s+", ""):gsub("%s+$", "")
+        return s ~= "" and s or nil
+    end)
+end
+
 -- The card's edition as a localized Message (foil/holographic/polychrome/
 -- negative), or nil when it has no edition.
 local EDITION_KEY = { foil = "foil", holo = "holographic", polychrome = "polychrome", negative = "negative" }
@@ -278,7 +394,16 @@ function Proxy.edition_word(node)
         or (e.foil and "foil") or (e.holo and "holo")
         or (e.polychrome and "polychrome") or (e.negative and "negative")
     local k = t and EDITION_KEY[t]
-    return k and Message.localized("EDITION." .. k) or nil
+    if k then return Message.localized("EDITION." .. k) end
+    -- An edition a mod registers (Cryptid's Astral, Paperback's Dichrome, ...):
+    -- the game's own name for it.
+    if type(e.key) == "string" then
+        local ok, name = pcall(localize, { type = "name_text", set = "Edition", key = e.key })
+        if ok and type(name) == "string" and name ~= "" and name ~= "ERROR" then
+            return Message.raw(name)
+        end
+    end
+    return nil
 end
 
 -- A card's price for the price announcement. Buyable shop items (shop cards,
@@ -304,13 +429,23 @@ function Proxy.card_cost(card)
 end
 
 -- A joker's rarity, as a "subtype" announcement (common / uncommon / rare /
--- legendary). center.rarity is 1..4; non-jokers (no rarity) yield nil.
+-- legendary). center.rarity is 1..4 in vanilla; a rarity a mod registers
+-- (Steamodded SMODS.Rarity: Cryptid's Epic / Exotic, ...) is its key, read
+-- by the game's own name for it, the text of the joker's rarity badge
+-- (localize('k_' .. key)). Non-jokers (no rarity) yield nil.
 local JOKER_RARITY = { "COMMON", "UNCOMMON", "RARE", "LEGENDARY" }
 function Proxy.joker_rarity(card)
     local c = card and card.config and card.config.center
     local r = c and c.rarity
     local key = type(r) == "number" and JOKER_RARITY[r]
-    return key and Message.localized("RARITY." .. key) or nil
+    if key then return Message.localized("RARITY." .. key) end
+    if type(r) == "string" then
+        local ok, word = pcall(localize, "k_" .. string.lower(r))
+        if ok and type(word) == "string" and word ~= "" and word ~= "ERROR" then
+            return Message.raw(word)
+        end
+    end
+    return nil
 end
 
 -- Collection secrecy, mirroring Card:generate_UIBox_ability_table's own type
@@ -371,6 +506,41 @@ end
 -- position toggle). Description guards face-down cards via card_description
 -- (no identity leak; position still reads).
 -- index/total override the position's unit (see card_position).
+-- The JokerDisplay mod's live readout under a joker, spoken with the
+-- player's scoring formats ("+15 mult"); nil without JokerDisplay. Loaded
+-- lazily: events.scoring reaches this module through ui.factory.
+function Proxy.joker_display_text(card)
+    local okj, JD = pcall(require, "ui.joker_display")
+    if not okj or type(JD) ~= "table" then return nil end
+    local oks, Scoring = pcall(require, "events.scoring")
+    local fmt = oks and type(Scoring) == "table" and Scoring.format_effect or nil
+    local ok, s = pcall(JD.text, card, fmt)
+    return ok and s or nil
+end
+
+-- What other mods have to say about a card (Blindfold.card_info, or the
+-- center's own blindfold.info; api/public), read right after its name.
+function Proxy.mod_card_lines(card)
+    local ok, Api = pcall(require, "api.public")
+    if not ok or type(Api) ~= "table" then return {} end
+    local okl, lines = pcall(Api.card_lines, card)
+    return okl and lines or {}
+end
+
+-- One "readout" announcement for everything mods draw / say about a card
+-- (the composer keeps one slot per key): JokerDisplay's readout first, then
+-- the API's lines. nil when there's nothing.
+local function readout_ann(card, with_jd)
+    local parts = {}
+    if with_jd then
+        local jd = Proxy.joker_display_text(card)
+        if jd then parts[#parts + 1] = jd end
+    end
+    for _, l in ipairs(Proxy.mod_card_lines(card)) do parts[#parts + 1] = l end
+    return parts[1] and A.readout(table.concat(parts, ", ")) or nil
+end
+Proxy.readout_ann = readout_ann
+
 function Proxy.card_deferred(card, index, total)
     local parts = {}
     if Proxy.announce_enabled("description") then
@@ -428,7 +598,10 @@ function Proxy.static_text_list(node, exclude)
     local parts = {}
     walk(node, exclude, function(n)
         local c = n.config
-        if c and n.UIT == G.UIT.T and not is_ref_bound(c) then
+        local ht = Hints.text(n)
+        if ht then
+            parts[#parts + 1] = ht
+        elseif c and n.UIT == G.UIT.T and not is_ref_bound(c) then
             local t = literal_text(c)
             if t and not is_skip(t) then parts[#parts + 1] = t end
         end
@@ -476,13 +649,60 @@ function Proxy.collect_def_text(node, parts, depth)
                     s = o.strings[fs] and o.strings[fs].string
                 end
                 if type(s) ~= "string" then s = type(o.string) == "string" and o.string or nil end
-                if type(s) == "string" and not is_skip(s) then parts[#parts + 1] = s end
+                -- (A node can carry the same text twice — config.text AND a
+                -- DynaText showing it, e.g. a booster's name line.)
+                if type(s) == "string" and not is_skip(s) and s ~= lit then parts[#parts + 1] = s end
             end
         end
         if node.nodes then for _, ch in ipairs(node.nodes) do Proxy.collect_def_text(ch, parts, depth + 1) end end
     else
         for _, ch in ipairs(node) do Proxy.collect_def_text(ch, parts, depth + 1) end
     end
+end
+
+-- Run one of the game's UI-definition builders (generate_card_ui and
+-- friends), hand its result to read(def) (nil if the build failed), then
+-- dispose of the engine objects the build spawned. A definition is just
+-- tables, but localize() instantiates live DynaTexts inside it (every card
+-- name, every {E:} part, Misprint's cyclers) and each registers itself in the
+-- engine's global lists (G.MOVEABLES, G.I.MOVEABLE, G.STAGE_OBJECTS) —
+-- updated and drawn every frame, wiped only by delete_run. Never removed,
+-- every description read leaked a few objects and the game slowed steadily
+-- over a run (issue #2). Everything appended to G.MOVEABLES during the build
+-- is ours; read first, then :remove() it.
+function Proxy.with_built(build, read)
+    local list = G and G.MOVEABLES
+    local n0 = type(list) == "table" and #list or nil
+    local ok, def = pcall(build)
+    local rok, res = pcall(read, ok and def or nil)
+    if n0 then
+        local spawned = {}
+        for i = n0 + 1, #list do spawned[#spawned + 1] = list[i] end
+        for i = #spawned, 1, -1 do
+            local o = spawned[i]
+            if type(o) == "table" and not o.REMOVED and type(o.remove) == "function" then
+                pcall(o.remove, o)
+            end
+        end
+    end
+    if rok then return res end
+    return nil
+end
+
+-- A card's ability table, built fresh and disposed after read(t).
+function Proxy.with_ability_table(card, read)
+    return Proxy.with_built(function() return card:generate_UIBox_ability_table() end, read)
+end
+
+-- A tag's sprite with its ability_UIBox_table freshly populated (the game's
+-- get_uibox_table), disposed after read(sprite). Safe to leave the sprite's
+-- table holding removed DynaTexts: both game hover paths rebuild it right
+-- before showing it.
+function Proxy.tag_built(tag, read)
+    return Proxy.with_built(function() return tag:get_uibox_table() end, function(sprite)
+        if type(sprite) ~= "table" then return nil end
+        return read(sprite)
+    end)
 end
 
 -- A card's description text. The game caches it in card.ability_UIBox_table but
@@ -536,16 +756,21 @@ function Proxy.card_description(card)
             end
         end
     end
-    local t
-    if type(card.generate_UIBox_ability_table) == "function" then
-        local ok, res = pcall(function() return card:generate_UIBox_ability_table() end)
-        if ok then t = res end
+    local function scrape(t)
+        if type(t) ~= "table" or type(t.main) ~= "table" then return nil end
+        local parts = {}
+        Proxy.collect_def_text(t.main, parts)
+        return #parts > 0 and table.concat(parts, " ") or nil
     end
-    t = t or card.ability_UIBox_table
-    if type(t) ~= "table" or type(t.main) ~= "table" then return nil end
-    local parts = {}
-    Proxy.collect_def_text(t.main, parts)
-    return #parts > 0 and table.concat(parts, " ") or nil
+    if type(card.generate_UIBox_ability_table) == "function" then
+        local fresh_ok = false
+        local d = Proxy.with_ability_table(card, function(t)
+            fresh_ok = type(t) == "table"
+            return scrape(t)
+        end)
+        if fresh_ok then return d end
+    end
+    return scrape(card.ability_UIBox_table)
 end
 
 -- A card's keyword "hover tips": the related-concept boxes the game builds
@@ -573,8 +798,7 @@ end
 function Proxy.card_info_tips(card)
     if not card or card.facing == "back" then return {} end          -- hide face-down identity
     if type(card.generate_UIBox_ability_table) ~= "function" then return {} end
-    local ok, t = pcall(function() return card:generate_UIBox_ability_table() end)
-    return ok and Proxy.table_info_tips(t) or {}
+    return Proxy.with_ability_table(card, Proxy.table_info_tips) or {}
 end
 
 -- Detail lines for this element's review buffer (the depth offloaded from the
@@ -848,8 +1072,49 @@ local face_down_label
 local ProxyPlayingCard = class(Proxy)
 ProxyPlayingCard.type_key = "card"
 -- Position rides the deferred follow-up (card_deferred), AFTER the description.
-ProxyPlayingCard.announcement_order = { "label", "sel_pos", "type", "selected", "enhancement", "edition", "seal", "debuff", "new", "price" }
+ProxyPlayingCard.announcement_order = { "label", "readout", "sel_pos", "type", "selected", "enhancement", "edition", "seal", "debuff", "new", "price" }
 ProxyPlayingCard.new = ctor(ProxyPlayingCard)
+
+-- The sticker a card wears, by name: Steamodded's stickers (eternal,
+-- perishable, rental, pinned and any a mod adds) in their registration
+-- order. Stickers set card.ability[key], except pinned (card.pinned), which
+-- also has no loc name of its own — it reads as the pinned status.
+function Proxy.sticker_name(node)
+    local keys = type(SMODS) == "table" and SMODS.Sticker and SMODS.Sticker.obj_buffer
+    if type(keys) ~= "table" then return nil end
+    for _, k in ipairs(keys) do
+        local has = (node.ability and node.ability[k]) or (k == "pinned" and node.pinned)
+        if has then
+            local ok, name = pcall(localize, { type = "name_text", set = "Other", key = k })
+            if ok and type(name) == "string" and name ~= "" and name ~= "ERROR" then
+                return Message.raw(name)
+            end
+            if k == "pinned" then return Message.localized("CARD.PINNED") end
+            return Message.raw(k)
+        end
+    end
+    return nil
+end
+
+-- Stickers beyond the four Blindfold announces itself (eternal, perishable,
+-- rental, pinned): ones a mod adds (Paperback's clips, ...), drawn on the
+-- card's face, read by their game name. Announcement list, possibly empty.
+local OWN_STICKERS = { eternal = true, perishable = true, rental = true, pinned = true }
+function Proxy.extra_sticker_anns(node)
+    local out = {}
+    local keys = type(SMODS) == "table" and SMODS.Sticker and SMODS.Sticker.obj_buffer
+    if type(keys) ~= "table" or not node.ability then return out end
+    for _, k in ipairs(keys) do
+        if not OWN_STICKERS[k] and node.ability[k] then
+            local ok, name = pcall(localize, { type = "name_text", set = "Other", key = k })
+            if ok and type(name) == "string" and name ~= "" and name ~= "ERROR" then
+                out[#out + 1] = A.status(Message.raw(name))
+            end
+        end
+    end
+    return out
+end
+
 -- Collection modifier cards (the seals / enhancements screens) are built on
 -- the EMPTY card front — no rank or suit renders. Their identity is the
 -- modifier itself: the enhancement center's name, the seal, or the edition.
@@ -913,6 +1178,14 @@ function ProxyPlayingCard:get_label()
     if fl then return fl end
     local base = node.base
     if not base then return nil end
+    -- A blank card (no rank / suit) is a stand-in: Steamodded's Stickers
+    -- collection shows each sticker on one. Name the sticker it wears.
+    if not base.suit then
+        local sticker = Proxy.sticker_name(node)
+        if sticker then return sticker end
+        local name = Proxy.center_name(node.config and node.config.center)
+        return Message.maybe_raw(name and tostring(name))
+    end
     local rank = Proxy.loc_str(base.value, "ranks") or tostring(base.value or "")
     local suit = Proxy.loc_str(base.suit, "suits_plural") or tostring(base.suit or "")
     if Settings.value("cards.blindatro_style") then
@@ -964,6 +1237,9 @@ function ProxyPlayingCard:get_focus_announcements()
     local label = self:get_label()
     if not label then return {} end
     local anns = { A.label(label), A.type(self.type_key) }
+    -- What other mods say about the card (Blindfold.card_info), after its name.
+    local ro = readout_ann(node, false)
+    if ro then anns[#anns + 1] = ro end
     if node.highlighted then anns[#anns + 1] = sel_position(node) or A.selected() end
     if node.ability and node.ability.forced_selection then
         anns[#anns + 1] = A.status(Message.localized("CARD.FORCED"))
@@ -989,6 +1265,7 @@ function ProxyPlayingCard:get_focus_announcements()
     if node.seal and consumed ~= "seal" and not folded then
         anns[#anns + 1] = A.seal(Message.localized("SEAL." .. string.upper(tostring(node.seal))))
     end
+    for _, a in ipairs(Proxy.extra_sticker_anns(node)) do anns[#anns + 1] = a end
     if node.debuff then anns[#anns + 1] = A.debuff() end
     local na = new_alert(node)
     if na then anns[#anns + 1] = na end
@@ -1002,6 +1279,9 @@ end
 function ProxyPlayingCard:fill_buffer(buf)
     local desc = Proxy.card_description(self.node)         -- both guard face-down
     if desc then buf:add(desc) end
+    if self.node.facing ~= "back" then
+        for _, l in ipairs(Proxy.mod_card_lines(self.node)) do buf:add(l) end
+    end
     for _, tip in ipairs(Proxy.card_info_tips(self.node)) do buf:add(tip) end
     local pos = Proxy.card_position(self.node)
     if pos then buf:add(pos:resolve()) end
@@ -1018,30 +1298,52 @@ local SET_TO_TYPE = {
     Joker = "joker", Tarot = "tarot", Planet = "planet",
     Spectral = "spectral", Voucher = "voucher", Booster = "booster",
 }
+
+-- The type announcement for a card's set: vanilla sets read Blindfold's type
+-- words; a set a mod adds (Paperback's Minor Arcana, ...) reads the game's
+-- own name for it, the text of the set badge the card shows.
+local function type_announcement(set)
+    if not set then return nil end
+    if SET_TO_TYPE[set] then return A.type(SET_TO_TYPE[set]) end
+    local ok, word = pcall(localize, "k_" .. string.lower(set))
+    if ok and type(word) == "string" and word ~= "" and word ~= "ERROR" then
+        return A.type_text(word)
+    end
+    return nil
+end
 local ProxyJoker = class(Proxy)
 -- Position rides the deferred follow-up (card_deferred), AFTER the description.
-ProxyJoker.announcement_order = { "label", "subtype", "type", "selected", "edition", "debuff", "eternal", "perishable", "rental", "pinned", "new", "price" }
+ProxyJoker.announcement_order = { "label", "readout", "subtype", "type", "selected", "edition", "debuff", "eternal", "perishable", "rental", "pinned", "new", "price" }
 ProxyJoker.new = ctor(ProxyJoker)
 
 -- The win-stake sticker (collection jokers: the badge for the best stake
 -- won with that joker). card.sticker is a stake colour from G.sticker_map;
 -- speak the localized stake name ("Gold Stake sticker"). Drawn on card
 -- BACKS too, so face-down cards keep it.
-local function win_sticker(node)
-    if type(node.sticker) ~= "string" then return nil end
-    local name = node.sticker
+-- The stake a win sticker stands for, by name ("Red Stake"). Vanilla's
+-- G.sticker_map is an array by stake level ('Red'); Steamodded's is keyed by
+-- stake ('stake_red' -> 'red'). Falls back to the raw sticker word.
+function Proxy.sticker_stake_name(sticker)
+    if type(sticker) ~= "string" then return nil end
+    local name = sticker
     pcall(function()
-        for i, colour in ipairs(G.sticker_map or {}) do
-            if colour == node.sticker then
-                local center = G.P_CENTER_POOLS.Stake[i]
-                local ok, s = pcall(localize,
-                    { type = "name_text", set = "Stake", key = center.key })
-                if ok and type(s) == "string" and s ~= "" then name = s end
+        for k, colour in pairs(G.sticker_map or {}) do
+            if colour == sticker then
+                local key = type(k) == "string" and k
+                    or (G.P_CENTER_POOLS.Stake[k] and G.P_CENTER_POOLS.Stake[k].key)
+                local ok, s = pcall(localize, { type = "name_text", set = "Stake", key = key })
+                if ok and type(s) == "string" and s ~= "" and s ~= "ERROR" then name = s end
                 break
             end
         end
     end)
-    return A.status(Message.localized("CARD.WIN_STICKER", { stake = name }))
+    return name
+end
+
+local function win_sticker(node)
+    if type(node.sticker) ~= "string" then return nil end
+    return A.status(Message.localized("CARD.WIN_STICKER",
+        { stake = Proxy.sticker_stake_name(node.sticker) }))
 end
 
 -- What a face-down card legitimately shows, so a flipped joker (Amber Acorn)
@@ -1083,6 +1385,7 @@ function ProxyJoker:get_label()
     if self.node.facing == "back" then return face_down_label(self.node) end
     local c = self.node.config and self.node.config.center
     local name = Proxy.center_name(c)
+        or Proxy.rendered_name(self.node)
         or (self.node.ability and self.node.ability.name)
         or (c and c.name)
     return Message.maybe_raw(name and tostring(name))
@@ -1096,8 +1399,8 @@ function ProxyJoker:get_focus_announcements()
     if hidden then
         local anns = { A.label(Message.localized("LABELS." .. hidden)) }
         local set = node.ability and node.ability.set
-        local tword = set and SET_TO_TYPE[set]
-        if tword then anns[#anns + 1] = A.type(tword) end
+        local tann = type_announcement(set)
+        if tann then anns[#anns + 1] = tann end
         return anns
     end
     -- Face down: identity hidden — no name, rarity, edition or price. The
@@ -1106,8 +1409,8 @@ function ProxyJoker:get_focus_announcements()
     if node.facing == "back" then
         local anns = { A.label(face_down_label(node)) }
         local set = node.ability and node.ability.set
-        local tword = set and SET_TO_TYPE[set]
-        if tword then anns[#anns + 1] = A.type(tword) end
+        local tann = type_announcement(set)
+        if tann then anns[#anns + 1] = tann end
         if node.highlighted then anns[#anns + 1] = A.selected() end
         -- Pinned stays spoken face down: the card visibly never leaves the
         -- left edge, so its position is public knowledge either way.
@@ -1119,11 +1422,15 @@ function ProxyJoker:get_focus_announcements()
     local label = self:get_label()
     if not label then return {} end
     local anns = { A.label(label) }
+    -- What JokerDisplay draws under the joker, right after its name.
+    -- (and what other mods say about it: Blindfold.card_info).
+    local ro = readout_ann(node, true)
+    if ro then anns[#anns + 1] = ro end
     local rar = Proxy.joker_rarity(node)
     if rar then anns[#anns + 1] = A.subtype(rar) end
     local set = node.ability and node.ability.set
-    local tword = set and SET_TO_TYPE[set]
-    if tword then anns[#anns + 1] = A.type(tword) end
+    local tann = type_announcement(set)
+    if tann then anns[#anns + 1] = tann end
     if node.highlighted then anns[#anns + 1] = A.selected() end
     local ed = Proxy.edition_word(node)
     if ed then anns[#anns + 1] = A.edition(ed) end
@@ -1136,6 +1443,7 @@ function ProxyJoker:get_focus_announcements()
     if node.ability and node.ability.perishable then anns[#anns + 1] = A.perishable() end
     if node.ability and node.ability.rental then anns[#anns + 1] = A.rental() end
     if node.pinned then anns[#anns + 1] = A.pinned() end
+    for _, a in ipairs(Proxy.extra_sticker_anns(node)) do anns[#anns + 1] = a end
     local sticker = win_sticker(node)
     if sticker then anns[#anns + 1] = sticker end
     local na = new_alert(node)
@@ -1150,6 +1458,9 @@ end
 function ProxyJoker:fill_buffer(buf)
     local desc = Proxy.card_description(self.node)
     if desc then buf:add(desc) end
+    if self.node.facing ~= "back" then
+        for _, l in ipairs(Proxy.mod_card_lines(self.node)) do buf:add(l) end
+    end
     for _, tip in ipairs(Proxy.card_info_tips(self.node)) do buf:add(tip) end
     local sell = Proxy.card_sell_message(self.node)
     if sell then buf:add(sell) end
@@ -1193,9 +1504,8 @@ local function blind_requirement(cfg)
         local scaling = (G.GAME and G.GAME.starting_params and G.GAME.starting_params.ante_scaling) or 1
         return get_blind_amount(ante) * (cfg.mult or 1) * scaling
     end)
-    if not ok or type(amt) ~= "number" then return nil end
-    local okf, s = pcall(number_format, amt)
-    return Message.localized("BLIND.REQUIREMENT", { amount = (okf and s) or tostring(amt) }):resolve()
+    if not ok or not Num.is(amt) then return nil end
+    return Message.localized("BLIND.REQUIREMENT", { amount = Num.fmt(amt) }):resolve()
 end
 
 local function blind_effect(cfg)
@@ -1219,9 +1529,7 @@ Proxy.blind_requirement = blind_requirement
 -- ability_UIBox_table). get_uibox_table populates it with the right loc vars.
 local function tag_description(tag)
     if type(tag) ~= "table" or type(tag.get_uibox_table) ~= "function" then return nil end
-    local ok, sprite = pcall(function() return tag:get_uibox_table() end)
-    if not ok or type(sprite) ~= "table" then return nil end
-    return Proxy.card_description(sprite)
+    return Proxy.tag_built(tag, function(sprite) return Proxy.card_description(sprite) end)
 end
 -- Exported for the tags collection gallery.
 Proxy.tag_description = tag_description
@@ -1314,9 +1622,10 @@ function ProxyBlind:fill_buffer(buf)
     local c = self.node.config
     if c and c.button == "skip_blind" and type(c.ref_table) == "table"
        and type(c.ref_table.get_uibox_table) == "function" then
-        local ok, sprite = pcall(function() return c.ref_table:get_uibox_table() end)
-        local t = ok and type(sprite) == "table" and sprite.ability_UIBox_table or nil
-        for _, tip in ipairs(Proxy.table_info_tips(t)) do buf:add(tip) end
+        local tips = Proxy.tag_built(c.ref_table, function(sprite)
+            return Proxy.table_info_tips(sprite.ability_UIBox_table)
+        end)
+        for _, tip in ipairs(tips or {}) do buf:add(tip) end
     end
 end
 
@@ -1330,8 +1639,8 @@ function ProxyCashOut:get_focus_announcements()
     -- buffer (browsable, with joker/tag drill-down) via fill_buffer.
     local anns = { A.label(Message.localized("CASHOUT.LABEL")) }
     local total = (G and G.GAME and G.GAME.current_round and G.GAME.current_round.dollars) or Cashout.total
-    if type(total) == "number" then
-        anns[#anns + 1] = A.status(Message.localized("CASHOUT.TOTAL", { dollars = total }))
+    if Num.is(total) then
+        anns[#anns + 1] = A.status(Message.localized("CASHOUT.TOTAL", { dollars = Num.fmt(total) }))
     end
     return anns
 end
@@ -1345,13 +1654,11 @@ function ProxyCashOut:fill_buffer(buf)
             local d = Proxy.card_description(row.card)
             if d then buf:add(d) end
         elseif type(row.tag) == "table" and type(row.tag.get_uibox_table) == "function" then
-            local ok, sprite = pcall(function() return row.tag:get_uibox_table() end)
-            if ok and type(sprite) == "table" then
-                local d = Proxy.card_description(sprite)
-                if d then buf:add(d) end
-            end
+            local d = Proxy.tag_description(row.tag)
+            if d then buf:add(d) end
         end
     end
+    if Cashout.hidden_text then buf:add(Cashout.hidden_text) end
 end
 
 return {

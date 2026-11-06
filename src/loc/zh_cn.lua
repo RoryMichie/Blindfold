@@ -29,6 +29,7 @@ return {
         UP = "上", DOWN = "下", LEFT = "左", RIGHT = "右",
         SPACE = "空格", ESCAPE = "Esc", TAB = "Tab", BACKSPACE = "退格",
         CTRL = "Ctrl", SHIFT = "Shift", ALT = "Alt",
+        CMD = "Command", WIN = "Windows",
         UNBOUND = "（未绑定）",
     },
 
@@ -68,6 +69,7 @@ return {
         CONFIRM_UNLOCK = "确认全部解锁",
         CONFIRM_ACTION = "确认{action}",
         COMPLETED      = "已完成",
+        DISABLE_BLINDFOLD = "关闭 Blindfold 后，游戏重启时语音将被停用。再按一次以确认。",
     },
 
     CONTAINER = {
@@ -81,6 +83,7 @@ return {
         SHOP        = "商店",
         SHOP_GOODS  = "优惠券和补充包",
         PACK        = "补充包",
+        OTHER = "其他控件",
     },
 
     PACK = {
@@ -148,6 +151,7 @@ return {
         CONSUMABLE = "消耗牌",
         CASHOUT = "结算",
         UI = "界面",
+        SCREEN = "屏幕",
         NONE = "没有缓冲区",
         EMPTY = "{buffer}缓冲区为空",
         CURRENT = "{buffer}，{item}",
@@ -322,7 +326,15 @@ return {
         VIEW_CHANGES    = "查看更新内容",
         OPENING_DOCS    = "正在打开文档。",
         OPENING_CHANGES = "正在打开更新内容。",
-        SPEECH_BACKEND  = "语音后端",
+        CAT_SCREEN_READERS = "屏幕阅读器",
+        CAT_CLIPBOARD    = "剪贴板",
+        VOICE_UNAVAILABLE = "不可用",
+        VOICE            = "语音",
+        VOICE_NAME       = "声音",
+        RATE             = "语速",
+        VOLUME           = "音量",
+        PITCH            = "音调",
+        NO_VOICE_OPTIONS = "此语音引擎没有可调整的选项",
         BACKEND_AUTO    = "自动（最佳可用）",
         SCORING         = "计分",
         FMT_CHIPS_GAIN  = "获得筹码播报",

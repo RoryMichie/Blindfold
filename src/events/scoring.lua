@@ -18,12 +18,9 @@ local function loc(key, vars) return Message.localized(key, vars):resolve() end
 -- Hand-panel numbers rendered the way the HUD renders them (the game's
 -- number_format: comma groups, scientific past 1e11, and infinity's famous
 -- "naneinf") — the per-effect popups stay raw, matching THEIR render.
-local function fmt_num(n)
-    if type(n) ~= "number" then return n end
-    local ok, s = pcall(number_format, n)
-    if ok and s ~= nil then return tostring(s) end
-    return tostring(n)
-end
+-- (Talisman / Amulet big numbers included: see ui/num.lua.)
+local fmt_num = require("ui.num").fmt
+local Num = require("ui.num")
 
 -- Read a mod setting (or the default when the settings layer isn't loaded).
 local function setting(key, default)
@@ -43,24 +40,33 @@ end
 --   signed_word "+10 chips"   signed "+10"   word "10 chips"   bare "10"
 --   signed_abbr "+10c"        abbr "10c"
 --   (times mult:) word "times 3 mult"   x_abbr "x3m"   x "3x"
+-- An amount as text: plain numbers raw (as their popups render), big
+-- numbers (Talisman / Amulet) through the game's formatter like their popups.
+local function disp(amt)
+    if Num.is_big(amt) then return Num.fmt(amt) end
+    return tostring(amt)
+end
+
+local function value(amt) return Num.to_n(amt) or tonumber(amt) or 0 end
+
 local function signed(amt)
-    local n = tostring(amt)
-    return (tonumber(amt) or 0) > 0 and ("+" .. n) or n
+    local n = disp(amt)
+    return value(amt) > 0 and ("+" .. n) or n
 end
 
 local function styled(style, amt, word_key, abbr_key)
     if style == "signed" then return signed(amt) end
-    if style == "bare" then return tostring(amt) end
+    if style == "bare" then return disp(amt) end
     if style == "signed_abbr" then return signed(amt) .. loc(abbr_key) end
-    if style == "abbr" then return tostring(amt) .. loc(abbr_key) end
-    if style == "word" then return loc(word_key, { amt = amt }) end
+    if style == "abbr" then return disp(amt) .. loc(abbr_key) end
+    if style == "word" then return loc(word_key, { amt = disp(amt) }) end
     return loc(word_key, { amt = signed(amt) })   -- signed_word (default)
 end
 
 local function styled_xmult(style, amt)
-    if style == "x_abbr" then return "x" .. tostring(amt) .. loc("SCORING.ABBR_MULT") end
-    if style == "x" then return tostring(amt) .. "x" end
-    return loc("SCORING.XMULT", { amt = amt })    -- word (default)
+    if style == "x_abbr" then return "x" .. disp(amt) .. loc("SCORING.ABBR_MULT") end
+    if style == "x" then return disp(amt) .. "x" end
+    return loc("SCORING.XMULT", { amt = disp(amt) })    -- word (default)
 end
 
 -- One scoring contribution as configured. kind: "chips" | "mult" | "xmult";
@@ -71,7 +77,7 @@ function M.format_effect(kind, amt)
     if kind == "xmult" then
         return styled_xmult(setting("scoring.fmt.xmult", "word"), amt)
     end
-    local gain = (tonumber(amt) or 0) >= 0
+    local gain = value(amt) >= 0
     if kind == "chips" then
         local style = gain and setting("scoring.fmt.chips_gain", "signed_word")
             or setting("scoring.fmt.chips_loss", "signed_word")
@@ -295,6 +301,35 @@ function M.on_level_down(hand)
     end
 end
 
+-- Hand level UP (planets, Space Joker, Burnt Joker, Orbital Tag; any mod's
+-- level_up_hand). Core calls this from its level_up_hand wrap BEFORE the
+-- original runs, so the line queues ahead of the upgrade's panel animation —
+-- landing as the panel opens — while reading the hand table when it RUNS,
+-- by which point level_up_hand has already updated it (it does so
+-- synchronously; only the visuals are queued). Announcing from the function
+-- rather than the hand panel is what works under Steamodded, whose rewrite
+-- feeds the panel the name, level, chips and mult in separate calls.
+function M.queue_level_up(hand)
+    if not setting("scoring.enabled", true) then return end
+    local function announce()
+        local h = G and G.GAME and G.GAME.hands and G.GAME.hands[hand]
+        if not h then return end
+        local name = hand
+        local ok, n = pcall(localize, hand, "poker_hands")
+        if ok and type(n) == "string" and n ~= "" and n ~= "ERROR" then name = n end
+        speak(loc("SCORING.HAND_LEVEL",
+            { name = name, level = h.level, chips = fmt_num(h.chips), mult = fmt_num(h.mult) }))
+    end
+    if G and G.E_MANAGER and Event then
+        G.E_MANAGER:add_event(Event({
+            trigger = "immediate",
+            func = function() announce(); return true end,
+        }))
+    else
+        announce()
+    end
+end
+
 -- Play-area banner: vanilla uses it only for "Not Allowed!" — The Eye / The
 -- Mouth rejecting a repeated / wrong hand type (chips and mult forced to 0,
 -- cards wasted). Not gated behind the scoring toggle: it's the only signal
@@ -337,8 +372,8 @@ function M.on_hand_text(config, vals)
     -- chips and mult; the lighter preview call while selecting carries just the
     -- name (so you hear the hand forming as you highlight cards).
     if config and config.immediate and type(vals.handname) == "string" and vals.handname ~= ""
-       and type(vals.chips) == "number" and type(vals.mult) == "number"
-       and (vals.chips > 0 or vals.mult > 0) then
+       and Num.is(vals.chips) and Num.is(vals.mult)
+       and (Num.to_n(vals.chips) > 0 or Num.to_n(vals.mult) > 0) then
         M._last_hand = vals.handname
         -- A new hand is being played: its total must speak even when it lands
         -- on exactly the same number as the previous hand's (the dedupe only
@@ -346,51 +381,29 @@ function M.on_hand_text(config, vals)
         M._last_score = nil
         speak(loc("SCORING.HAND", { name = vals.handname, chips = fmt_num(vals.chips), mult = fmt_num(vals.mult) }))
     elseif type(vals.handname) == "string" and vals.handname ~= ""
-        and type(vals.level) == "number"
-        and type(vals.chips) == "number" and type(vals.mult) == "number" then
-        -- A hand being UPGRADED (planet card, level-up jokers). The values in
-        -- THIS call may be pre- or post-upgrade depending on the caller (the
-        -- planet path shows the panel BEFORE level_up_hand increments;
-        -- joker-triggered upgrades call it after) — so the announcement is
-        -- queued one event later and reads the LIVE hand table, which is
-        -- post-upgrade in every path by then.
+        and type(vals.level) == "number" then
+        -- The level-up panel (planet, level-up jokers, Orbital Tag; under
+        -- Steamodded also its name+level-only opener and the panel restore
+        -- after a mid-scoring upgrade). The announcement comes from the
+        -- level_up_hand wrap (queue_level_up); here, just note the hand so the
+        -- selection preview doesn't re-read its name.
         M._last_hand = vals.handname
-        local name = vals.handname
-        local fallback = { name = name, level = vals.level, chips = fmt_num(vals.chips), mult = fmt_num(vals.mult) }
-        local function announce()
-            local live
-            pcall(function()
-                for key, h in pairs(G.GAME.hands) do
-                    local ok, loc_name = pcall(localize, key, "poker_hands")
-                    if ok and loc_name == name then
-                        live = { name = name, level = h.level, chips = fmt_num(h.chips), mult = fmt_num(h.mult) }
-                        break
-                    end
-                end
-            end)
-            speak(loc("SCORING.HAND_LEVEL", live or fallback))
-        end
-        if G and G.E_MANAGER and Event then
-            G.E_MANAGER:add_event(Event({
-                trigger = "immediate",
-                func = function()
-                    announce()
-                    return true
-                end,
-            }))
-        else
-            announce()
-        end
     elseif type(vals.handname) == "string" and vals.handname ~= "" and vals.handname ~= M._last_hand then
         M._last_hand = vals.handname
         if setting("scoring.hand_preview", true) then speak(vals.handname) end
+    end
+    -- A level CHANGE shown as text rather than a number: Black Hole's "All
+    -- Hands" panel ends on level "+1" (its per-hand level-ups are instant
+    -- and silent), and mods do the same for group upgrades.
+    if type(vals.level) == "string" and vals.level:match("^[%+%-]%d") then
+        speak(loc("RUNINFO.COL_LEVEL") .. " " .. vals.level)
     end
     if vals.chip_total ~= nil and vals.chip_total ~= M._last_score then
         -- Final score. The same call resets chips/mult to 0, so report the
         -- running totals captured during the count-up: "X chips times Y mult
         -- equals Z".
         M._last_score = vals.chip_total
-        if type(M._cur_chips) == "number" and type(M._cur_mult) == "number" then
+        if Num.is(M._cur_chips) and Num.is(M._cur_mult) then
             speak(loc("SCORING.TOTAL", { chips = fmt_num(M._cur_chips), mult = fmt_num(M._cur_mult), score = fmt_num(vals.chip_total) }))
         else
             speak(loc("SCORING.SCORE", { score = fmt_num(vals.chip_total) }))
@@ -398,8 +411,8 @@ function M.on_hand_text(config, vals)
         M._cur_chips, M._cur_mult = nil, nil
     else
         -- Track the running chips and mult so the final equation has them.
-        if type(vals.chips) == "number" and vals.chips > 0 then M._cur_chips = vals.chips end
-        if type(vals.mult) == "number" and vals.mult > 0 then M._cur_mult = vals.mult end
+        if Num.is(vals.chips) and Num.to_n(vals.chips) > 0 then M._cur_chips = vals.chips end
+        if Num.is(vals.mult) and Num.to_n(vals.mult) > 0 then M._cur_mult = vals.mult end
     end
 end
 

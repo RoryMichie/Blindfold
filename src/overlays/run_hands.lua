@@ -18,10 +18,15 @@ local require = ...
 local Id = require("overlay.id")
 local Message = require("ui.message")
 local Mirror = require("overlays.menu_mirror")
+local Num = require("ui.num")
 
 local M = { id = "run_hands" }
 
--- The game's own render order (create_UIBox_current_hands) — visible only.
+-- The game's render order (create_UIBox_current_hands) — the fallback when
+-- the rows on screen can't be read. Normally the table follows the rows the
+-- game actually drew: Steamodded lists G.handlist (modded hands included),
+-- hides hands per SMODS.is_poker_hand_visible, and pages ten at a time once
+-- there are more than twelve.
 local HAND_ORDER = {
     "Flush Five", "Flush House", "Five of a Kind", "Straight Flush",
     "Four of a Kind", "Full House", "Flush", "Straight", "Three of a Kind",
@@ -92,6 +97,58 @@ local function inside_hands_row(node)
     return false
 end
 
+-- The play count a row draws after its "#": the run's count in Run Info,
+-- the profile's lifetime count in Steamodded's Poker Hands collection. A
+-- plain text node (vanilla) or a DynaText (Steamodded).
+local function row_played(row)
+    local found, after_hash = nil, false
+    local function walk(n, depth)
+        if found or type(n) ~= "table" or depth > 10 then return end
+        local c = n.config
+        if c then
+            if c.text == "  #" then
+                after_hash = true
+            elseif after_hash then
+                local t = c.text
+                if t == nil and type(c.object) == "table" then t = c.object.string end
+                if t ~= nil and tostring(t):match("%S") then found = tostring(t); return end
+            end
+        end
+        if n.children then each_child(n.children, function(ch) walk(ch, depth + 1) end) end
+    end
+    walk(row, 0)
+    return found
+end
+
+-- The hand keys of the rows on screen, in render order (each row's tooltip
+-- filler carries its hand key), with each row's drawn play count.
+local played_shown = {}
+local function rendered_hands(root)
+    local out = {}
+    played_shown = {}
+    local function walk(node, depth)
+        if type(node) ~= "table" or depth > 30 then return end
+        if is_hands_row(node) then
+            local tip = node.config.on_demand_tooltip
+            local key = tip and tip.filler and tip.filler.args
+            if type(key) == "string" then
+                out[#out + 1] = key
+                played_shown[key] = row_played(node)
+            end
+            return
+        end
+        local obj = node.config and node.config.object
+        if obj and obj.is and UIBox and obj:is(UIBox) and obj.UIRoot then
+            walk(obj.UIRoot, depth + 1)
+        end
+        if node.children then
+            each_child(node.children, function(ch) walk(ch, depth + 1) end)
+        end
+    end
+    walk(root, 0)
+    return out
+end
+
 function M:handler()
     local ov = G and G.OVERLAY_MENU
     if type(ov) ~= "table" or not ov.UIRoot then return "inactive" end
@@ -157,17 +214,25 @@ function M:build(b)
         b:add_node(other_ids[i], Mirror.vtable_for(n))
     end
 
-    -- The table: one row per visible hand, in the game's render order.
+    -- The table: one row per hand the game drew, in its order.
     local rows = {}
-    for _, name in ipairs(HAND_ORDER) do
+    local okr, shown = pcall(rendered_hands, ov.UIRoot)
+    if not okr or not shown[1] then
+        shown = {}
+        for _, name in ipairs(HAND_ORDER) do
+            local h = G.GAME and G.GAME.hands and G.GAME.hands[name]
+            if h and h.visible then shown[#shown + 1] = name end
+        end
+    end
+    for _, name in ipairs(shown) do
         local h = G.GAME and G.GAME.hands and G.GAME.hands[name]
-        if h and h.visible then
+        if h then
             local disp = game_loc(name, "poker_hands") or name
             local values = {
                 (game_loc("k_level_prefix") or "lvl.") .. tostring(h.level),
-                tostring(h.chips),
-                tostring(h.mult),
-                tostring(h.played),
+                tostring(Num.fmt(h.chips)),
+                tostring(Num.fmt(h.mult)),
+                played_shown[name] or tostring(h.played),
                 hand_description(name) or "",
             }
             local cells = {}

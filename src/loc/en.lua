@@ -36,6 +36,7 @@ return {
         UP = "Up", DOWN = "Down", LEFT = "Left", RIGHT = "Right",
         SPACE = "Space", ESCAPE = "Escape", TAB = "Tab", BACKSPACE = "Backspace",
         CTRL = "Ctrl", SHIFT = "Shift", ALT = "Alt",
+        CMD = "Command", WIN = "Windows",
         UNBOUND = "(unbound)",
     },
 
@@ -79,6 +80,7 @@ return {
         CONFIRM_UNLOCK = "Confirm unlock all",
         CONFIRM_ACTION = "Confirm {action}",
         COMPLETED      = "completed",   -- the challenge list's green check
+        DISABLE_BLINDFOLD = "Turning off Blindfold disables its speech after the game restarts. Press again to confirm.",   -- Steamodded Mods menu: first press on Blindfold's own checkbox
     },
 
     -- Container / region names (announced when focus enters a new card row).
@@ -93,6 +95,7 @@ return {
         SHOP        = "Shop",
         SHOP_GOODS  = "Vouchers and packs",
         PACK        = "Pack",
+        OTHER = "Other controls",   -- a screen's controls it doesn't list itself (mods)
     },
 
     -- Booster-pack opening screen.
@@ -171,6 +174,7 @@ return {
         CONSUMABLE = "Consumable",
         CASHOUT = "Cash out",
         UI = "UI",
+        SCREEN = "Screen",   -- everything visible on screen
         NONE = "No buffers",
         EMPTY = "{buffer} buffer is empty",
         CURRENT = "{buffer}, {item}",
@@ -358,7 +362,15 @@ return {
         VIEW_CHANGES    = "View Changes",
         OPENING_DOCS    = "Opening documentation.",
         OPENING_CHANGES = "Opening changes.",
-        SPEECH_BACKEND  = "Speech backend",
+        CAT_SCREEN_READERS = "Screen readers",
+        CAT_CLIPBOARD    = "Clipboard",
+        VOICE_UNAVAILABLE = "unavailable",
+        VOICE            = "Voice",
+        VOICE_NAME       = "Voice",
+        RATE             = "Rate",
+        VOLUME           = "Volume",
+        PITCH            = "Pitch",
+        NO_VOICE_OPTIONS = "This voice has no adjustable options",
         BACKEND_AUTO    = "Auto (best available)",
         SCORING         = "Scoring",
         FMT_CHIPS_GAIN  = "Gained chips announcement",

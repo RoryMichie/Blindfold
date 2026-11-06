@@ -16,9 +16,13 @@ local function msg(v) return type(v) == "string" and Message.raw(v) or v end
 local A = {}
 function A.label(label)    return { key = "label",    suffix = ",", render = function() return msg(label) end } end
 function A.type(type_key)  return { key = "type",     suffix = ",", render = function() return Message.localized("TYPES." .. string.upper(type_key)) end } end
+-- A type word that is already text (a modded set's own localized name).
+function A.type_text(word) return { key = "type",     suffix = ",", render = function() return msg(word) end } end
 -- Subtype reads as an adjective before the type (empty suffix → "common joker").
 function A.subtype(v)      return { key = "subtype",  suffix = "",  render = function() return msg(v) end } end
 function A.status(value)   return { key = "status",   suffix = ",", render = function() return msg(value) end } end
+-- A live readout drawn on the element by a mod (JokerDisplay under a joker).
+function A.readout(text)   return { key = "readout",  suffix = ",", render = function() return msg(text) end } end
 function A.tooltip(text)   return { key = "tooltip",  suffix = "",  render = function() return msg(text) end } end
 function A.locked()        return { key = "locked",   suffix = ",", render = function() return Message.localized("LABELS.LOCKED") end } end
 function A.position(text)  return { key = "position", suffix = "",  render = function() return msg(text) end } end

@@ -30,6 +30,7 @@ local Id = require("overlay.id")
 local Message = require("ui.message")
 local Factory = require("ui.factory")
 local Proxy = require("ui.proxies").Proxy
+local Hints = require("api.hints")
 
 -- The engine's dynamic focusability gates (Controller:is_node_focusable,
 -- controller.lua:1082): a control must be hoverable and visible. Without these
@@ -65,11 +66,12 @@ local function each_child(children, visit)
     for k in pairs(children) do
         if type(k) == "number" and k > maxn then maxn = k end
     end
+    -- A mod's decorative nodes (api/hints hidden) are skipped outright.
     for i = 1, maxn do
-        if children[i] ~= nil then visit(children[i]) end
+        if children[i] ~= nil and not Hints.hidden(children[i]) then visit(children[i]) end
     end
     for k, v in pairs(children) do
-        if type(k) ~= "number" then visit(v) end
+        if type(k) ~= "number" and not Hints.hidden(v) then visit(v) end
     end
 end
 
@@ -104,9 +106,15 @@ local function collect(node, out, depth, seen)
     if seen[node] then return end
     seen[node] = true
     if node.states and node.states.visible == false then return end
+    if Hints.hidden(node) then return end
 
     if Proxy.node_is_control(node) then
-        if focusable_state(node) then out[#out + 1] = node end
+        -- Steamodded's scrollbars (SMODS.GUI.scrollbar) only scroll the
+        -- view; the walk already reads a scroll box's whole content.
+        local fa = node.config and node.config.focus_args
+        if focusable_state(node) and not (fa and fa.type == "scrollbar") then
+            out[#out + 1] = node
+        end
         return
     end
 
@@ -317,7 +325,14 @@ local function vtable_for(node)
     if ftype == "slider" then
         vt.on_horizontal_adjust = function(ctx, sign, large)
             pcall(function()
-                G.FUNCS.slider_descreet(node.children[1], sign * (large and 0.05 or 0.01))
+                local bar = node.children[1]
+                G.FUNCS.slider_descreet(bar, sign * (large and 0.05 or 0.01))
+                -- slider_descreet moves the value but, unlike a mouse drag,
+                -- never fires the slider's callback; sliders that persist or
+                -- apply their value (the mod's own) need it.
+                local rt = bar and bar.children and bar.children[1]
+                rt = rt and rt.config and rt.config.ref_table
+                if rt and rt.callback and G.FUNCS[rt.callback] then G.FUNCS[rt.callback](rt) end
             end)
             speak_value(ctx, node)
         end
@@ -421,6 +436,164 @@ local function is_unlock_overlay(items)
         end
     end
     return false
+end
+
+-- --- Text panels, line by line ---------------------------------------------
+--
+-- A controls-free text panel (a mod's description and credits, a locked
+-- tab's explanation, a challenge's rules) reads one item per RENDERED LINE:
+-- a node is one line when no deeper row beneath it carries text; colored
+-- fragments within a row stay joined. Embedded newlines read as spaces.
+
+local function ordered_kids(n)
+    local kids = {}
+    if type(n.children) == "table" then
+        each_child(n.children, function(ch) kids[#kids + 1] = ch end)
+    end
+    return kids
+end
+
+local function has_text(n, depth)
+    if type(n) ~= "table" or (depth or 0) > 8 then return false end
+    if Hints.text(n) then return true end
+    local c = n.config
+    if c and G.UIT and n.UIT == G.UIT.T
+        and (type(c.text) == "string" or type(c.text) == "number") then
+        return true
+    end
+    if c and type(c.object) == "table" and type(c.object.string) == "string" then
+        return true
+    end
+    for _, ch in ipairs(ordered_kids(n)) do
+        if has_text(ch, (depth or 0) + 1) then return true end
+    end
+    return false
+end
+
+local function has_deeper_text_row(n, depth)
+    if type(n) ~= "table" or (depth or 0) > 8 then return false end
+    if Hints.text(n) then return false end   -- its own text stands for it
+    for _, ch in ipairs(ordered_kids(n)) do
+        if type(ch) == "table" then
+            if G.UIT and ch.UIT == G.UIT.R and has_text(ch) then return true end
+            if has_deeper_text_row(ch, (depth or 0) + 1) then return true end
+        end
+    end
+    return false
+end
+
+local function collect_lines(node, out, depth)
+    if type(node) ~= "table" or (depth or 0) > 8 then return end
+    if not has_deeper_text_row(node) then
+        if has_text(node) then
+            local ok, t = pcall(Proxy.ordered_text, node)
+            if ok and type(t) == "string" then
+                t = t:gsub("%s*\n%s*", " "):gsub("^%s+", ""):gsub("%s+$", "")
+                if t ~= "" then out[#out + 1] = t end
+            end
+        end
+        return
+    end
+    for _, ch in ipairs(ordered_kids(node)) do
+        collect_lines(ch, out, (depth or 0) + 1)
+    end
+end
+
+-- Rejoin a sentence the layout wrapped across rows: a line starting with a
+-- lowercase letter continues the previous one ("Required score scales" +
+-- "faster for each Ante"). List entries ("- name"), capitalized lines and
+-- caseless scripts stay as drawn.
+local function merge_wrapped(lines)
+    local out = {}
+    for _, l in ipairs(lines) do
+        if out[1] and l:match("^%l") then
+            out[#out] = out[#out] .. " " .. l
+        else
+            out[#out + 1] = l
+        end
+    end
+    return out
+end
+
+local function text_lines(root)
+    local lines = {}
+    collect_lines(root, lines, 0)
+    if lines[1] then return merge_wrapped(lines) end
+    local ok, t = pcall(Proxy.all_text, root)
+    if ok and type(t) == "string" and t ~= "" then return { (t:gsub("%s*\n%s*", " ")) } end
+    return {}
+end
+
+-- A panel that MIXES text and controls (Steamodded's credits tab: lines of
+-- text around one button), in reading order: { text = line } entries for
+-- the rendered text lines and { node = control } entries for the controls.
+-- Opt-in for screens whose surrounding text matters; the generic walk reads
+-- controls only (their captions come through their own labels). With
+-- opts.boxes, a nested UIBox (tab contents, an embedded panel) is reported
+-- in place as a { box = uibox } entry instead of being skipped.
+local function panel_items(root, opts)
+    local out = {}
+    local boxes = opts and opts.boxes
+    -- The nested boxes under a node the walk doesn't otherwise descend.
+    local function find_boxes(m, d)
+        if type(m) ~= "table" or d > 12 then return end
+        if m.states and m.states.visible == false then return end
+        local o = m.config and m.config.object
+        if type(o) == "table" and o.is and UIBox and o:is(UIBox) then
+            out[#out + 1] = { box = o }
+            return
+        end
+        for _, ch in ipairs(ordered_kids(m)) do find_boxes(ch, d + 1) end
+    end
+    local function walk(n, depth)
+        if type(n) ~= "table" or depth > 12 then return end
+        if n.states and n.states.visible == false then return end
+        if Proxy.node_is_control(n) then
+            if focusable_state(n) then out[#out + 1] = { node = n } end
+            -- A control can hold a box (the tab strip holds the tab's
+            -- contents): report it after the control.
+            if boxes then
+                for _, ch in ipairs(ordered_kids(n)) do find_boxes(ch, 1) end
+            end
+            return
+        end
+        local has_control = false
+        local function scan(m, d)
+            if has_control or type(m) ~= "table" or d > 12 then return end
+            if Proxy.node_is_control(m) then has_control = true; return end
+            for _, ch in ipairs(ordered_kids(m)) do scan(ch, d + 1) end
+        end
+        scan(n, 0)
+        if not has_control and not has_deeper_text_row(n) then
+            if has_text(n) then
+                local lines = {}
+                collect_lines(n, lines, 0)
+                -- A wrapped continuation joins the text entry before it.
+                for _, l in ipairs(merge_wrapped(lines)) do
+                    local prev = out[#out]
+                    if prev and prev.text and l:match("^%l") then
+                        prev.text = prev.text .. " " .. l
+                    else
+                        out[#out + 1] = { text = l }
+                    end
+                end
+            elseif boxes then
+                find_boxes(n, 0)
+            end
+            return
+        end
+        for _, ch in ipairs(ordered_kids(n)) do walk(ch, depth + 1) end
+    end
+    walk(root, 0)
+    return out
+end
+
+-- A controls-free nested box the collector pushed as one readable item.
+local function is_text_root(node)
+    local c = node.config
+    return node.UIT and G.UIT and node.UIT == G.UIT.ROOT
+        and not (c and (c.button or c.focus_args))
+        and not (node.is and Card and node:is(Card))
 end
 
 -- Gather the focusable controls from a list of sources, in order: UIBoxes
@@ -537,7 +710,16 @@ local function make(id, get_sources, is_active)
             })
         end
         for i, n in ipairs(items) do
-            b:add_item(Id.referenced(n, "m:" .. i), vtable_for(n))
+            local lines = is_text_root(n) and text_lines(n) or nil
+            if lines and #lines > 1 then
+                for j, line in ipairs(lines) do
+                    b:add_label(Id.structural("m:" .. i .. ":" .. j), function(ctx)
+                        ctx.message:fragment(Message.raw(line))
+                    end)
+                end
+            else
+                b:add_item(Id.referenced(n, "m:" .. i), vtable_for(n))
+            end
         end
     end
 
@@ -550,6 +732,9 @@ local M = {}
 -- discovery and per-control behavior but their own layout.
 M.gather = gather
 M.vtable_for = vtable_for
+M.text_lines = text_lines
+M.panel_items = panel_items
+M.is_text_root = is_text_root
 
 -- Whatever modal overlay menu is up (options tree, run setup, run info, deck
 -- view, our own keybinds/announcements screens, ...).

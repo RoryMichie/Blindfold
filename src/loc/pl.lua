@@ -29,6 +29,7 @@ return {
         UP = "Góra", DOWN = "Dół", LEFT = "Lewo", RIGHT = "Prawo",
         SPACE = "Spacja", ESCAPE = "Escape", TAB = "Tab", BACKSPACE = "Backspace",
         CTRL = "Ctrl", SHIFT = "Shift", ALT = "Alt",
+        CMD = "Command", WIN = "Windows",
         UNBOUND = "(nieprzypisane)",
     },
 
@@ -68,6 +69,7 @@ return {
         CONFIRM_UNLOCK = "Potwierdź odblokowanie wszystkiego",
         CONFIRM_ACTION = "Potwierdź {action}",
         COMPLETED      = "ukończone",
+        DISABLE_BLINDFOLD = "Wyłączenie Blindfold wyłączy jego mowę po ponownym uruchomieniu gry. Naciśnij ponownie, aby potwierdzić.",
     },
 
     CONTAINER = {
@@ -81,6 +83,7 @@ return {
         SHOP        = "Sklep",
         SHOP_GOODS  = "Kupony i paczki",
         PACK        = "Paczka",
+        OTHER = "Inne kontrolki",
     },
 
     PACK = {
@@ -148,6 +151,7 @@ return {
         CONSUMABLE = "Przedmiot jednorazowy",
         CASHOUT = "Wypłata",
         UI = "Interfejs",
+        SCREEN = "Ekran",
         NONE = "Brak buforów",
         EMPTY = "Bufor {buffer} jest pusty",
         CURRENT = "{buffer}, {item}",
@@ -322,7 +326,15 @@ return {
         VIEW_CHANGES    = "Zobacz zmiany",
         OPENING_DOCS    = "Otwieranie dokumentacji.",
         OPENING_CHANGES = "Otwieranie zmian.",
-        SPEECH_BACKEND  = "Silnik mowy",
+        CAT_SCREEN_READERS = "Czytniki ekranu",
+        CAT_CLIPBOARD    = "Schowek",
+        VOICE_UNAVAILABLE = "niedostępny",
+        VOICE            = "Głos",
+        VOICE_NAME       = "Głos",
+        RATE             = "Szybkość",
+        VOLUME           = "Głośność",
+        PITCH            = "Wysokość",
+        NO_VOICE_OPTIONS = "Ten silnik mowy nie ma żadnych opcji do regulacji",
         BACKEND_AUTO    = "Auto (najlepszy dostępny)",
         SCORING         = "Punktacja",
         FMT_CHIPS_GAIN  = "Ogłaszanie zdobytych żetonów",

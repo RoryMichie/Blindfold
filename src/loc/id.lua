@@ -29,6 +29,7 @@ return {
         UP = "Atas", DOWN = "Bawah", LEFT = "Kiri", RIGHT = "Kanan",
         SPACE = "Spasi", ESCAPE = "Escape", TAB = "Tab", BACKSPACE = "Backspace",
         CTRL = "Ctrl", SHIFT = "Shift", ALT = "Alt",
+        CMD = "Command", WIN = "Windows",
         UNBOUND = "(belum diatur)",
     },
 
@@ -68,6 +69,7 @@ return {
         CONFIRM_UNLOCK = "Konfirmasi buka semua",
         CONFIRM_ACTION = "Konfirmasi {action}",
         COMPLETED      = "selesai",
+        DISABLE_BLINDFOLD = "Menonaktifkan Blindfold mematikan suaranya setelah game dimulai ulang. Tekan lagi untuk mengonfirmasi.",
     },
 
     CONTAINER = {
@@ -81,6 +83,7 @@ return {
         SHOP        = "Toko",
         SHOP_GOODS  = "Voucher dan pack",
         PACK        = "Pack",
+        OTHER = "Kontrol lainnya",
     },
 
     PACK = {
@@ -148,6 +151,7 @@ return {
         CONSUMABLE = "Kartu habis pakai",
         CASHOUT = "Pencairan",
         UI = "Antarmuka",
+        SCREEN = "Layar",
         NONE = "Tidak ada buffer",
         EMPTY = "Buffer {buffer} kosong",
         CURRENT = "{buffer}, {item}",
@@ -322,7 +326,15 @@ return {
         VIEW_CHANGES    = "Lihat Perubahan",
         OPENING_DOCS    = "Membuka dokumentasi.",
         OPENING_CHANGES = "Membuka perubahan.",
-        SPEECH_BACKEND  = "Backend suara",
+        CAT_SCREEN_READERS = "Pembaca layar",
+        CAT_CLIPBOARD    = "Papan klip",
+        VOICE_UNAVAILABLE = "tidak tersedia",
+        VOICE            = "Suara",
+        VOICE_NAME       = "Suara",
+        RATE             = "Kecepatan",
+        VOLUME           = "Volume",
+        PITCH            = "Nada",
+        NO_VOICE_OPTIONS = "Mesin suara ini tidak memiliki opsi yang dapat diatur",
         BACKEND_AUTO    = "Otomatis (terbaik yang tersedia)",
         SCORING         = "Skor",
         FMT_CHIPS_GAIN  = "Pengumuman chip diperoleh",

@@ -11,7 +11,7 @@ local Message = require("ui.message")
 local Factory = require("ui.factory")
 local Cashout = require("events.cashout")
 
-local M = { id = "cashout" }
+local M = { id = "cashout", extras = true }   -- + an "Other controls" row (overlay/extras)
 
 -- The Cash Out button is NOT inside G.round_eval: the game builds it as a
 -- separate ANONYMOUS UIBox (common_events.lua:1069 — anchored via config.major
@@ -74,6 +74,11 @@ function M:build(b)
         b:add_label(Id.structural("row:" .. i), function(ctx)
             local ok, s = pcall(Cashout.summary, row)
             if ok and s then ctx.message:fragment(s) end
+        end)
+    end
+    if Cashout.hidden_text then
+        b:add_label(Id.structural("row:hidden"), function(ctx)
+            ctx.message:fragment(Cashout.hidden_text)
         end)
     end
 

@@ -29,6 +29,7 @@ return {
         UP = "Вверх", DOWN = "Вниз", LEFT = "Влево", RIGHT = "Вправо",
         SPACE = "Пробел", ESCAPE = "Escape", TAB = "Tab", BACKSPACE = "Backspace",
         CTRL = "Ctrl", SHIFT = "Shift", ALT = "Alt",
+        CMD = "Command", WIN = "Windows",
         UNBOUND = "(не назначено)",
     },
 
@@ -68,6 +69,7 @@ return {
         CONFIRM_UNLOCK = "Подтвердить разблокировку всего",
         CONFIRM_ACTION = "Подтвердить: {action}",
         COMPLETED      = "пройдено",
+        DISABLE_BLINDFOLD = "Если отключить Blindfold, после перезапуска игры речь пропадёт. Нажмите ещё раз для подтверждения.",
     },
 
     CONTAINER = {
@@ -81,6 +83,7 @@ return {
         SHOP        = "Магазин",
         SHOP_GOODS  = "Ваучеры и наборы",
         PACK        = "Набор",
+        OTHER = "Другие элементы",
     },
 
     PACK = {
@@ -148,6 +151,7 @@ return {
         CONSUMABLE = "Расходник",
         CASHOUT = "Выплата",
         UI = "Интерфейс",
+        SCREEN = "Экран",
         NONE = "Нет буферов",
         EMPTY = "Буфер {buffer} пуст",
         CURRENT = "{buffer}, {item}",
@@ -322,7 +326,15 @@ return {
         VIEW_CHANGES    = "Открыть список изменений",
         OPENING_DOCS    = "Открывается документация.",
         OPENING_CHANGES = "Открывается список изменений.",
-        SPEECH_BACKEND  = "Речевой движок",
+        CAT_SCREEN_READERS = "Программы экранного доступа",
+        CAT_CLIPBOARD    = "Буфер обмена",
+        VOICE_UNAVAILABLE = "недоступен",
+        VOICE            = "Голос",
+        VOICE_NAME       = "Голос",
+        RATE             = "Скорость",
+        VOLUME           = "Громкость",
+        PITCH            = "Высота",
+        NO_VOICE_OPTIONS = "У этого речевого движка нет настраиваемых параметров",
         BACKEND_AUTO    = "Авто (лучший доступный)",
         SCORING         = "Подсчёт очков",
         FMT_CHIPS_GAIN  = "Озвучивание полученных фишек",

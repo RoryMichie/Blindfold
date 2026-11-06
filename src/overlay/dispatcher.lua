@@ -49,6 +49,8 @@ local D = {
     refreshid = {},    -- [id] = last reported refresh-identity
     active_last = nil, -- id active last tick (sleeping/pending count as active)
     last_spoken = nil, -- structural key last spoken via the no-command path
+    last_ref = nil,    -- backing object of the last spoken label
+    handoff_ref = nil, -- last_ref when another overlay took over (see tick)
     _captures = false,
     _pending = false,
 }
@@ -90,10 +92,17 @@ local function find_active()
     return nil, "inactive"
 end
 
+-- Overlays marked `extras = true` (the gameplay screens) get a final row of
+-- whatever controls on screen they didn't list themselves (overlay/extras).
+local Extras = require("overlay.extras")
+
 local function render_cb_for(overlay)
     return function(ctx)
         local b = Builder.new()
         overlay:build(b)
+        if overlay.extras and b.current_row == nil and next(b.raw_nodes) == nil then
+            Extras.append(b)
+        end
         return b:build()
     end
 end
@@ -123,6 +132,7 @@ local function apply_nav(graph, state, ctx, message, command)
     if kind == "confirm" then
         local acted = graph:click(ctx, command.mods)
         D.last_spoken = state.cur and state.cur.key
+        D.last_ref = state.cur and state.cur.ref
         return { message = message:build(), focus_ref = state.cur and state.cur.ref,
             clicked = true, spoke_label = not acted, deferred = cur_deferred(graph, state) }
     end
@@ -147,7 +157,10 @@ local function apply_nav(graph, state, ctx, message, command)
     -- or a keypress racing a fresh screen suppressed the frame tick's pending
     -- open-announce (screens opened mute; user report).
     local spoke = moved or kind == "move_to_edge"
-    if spoke then D.last_spoken = state.cur and state.cur.key end
+    if spoke then
+        D.last_spoken = state.cur and state.cur.key
+        D.last_ref = state.cur and state.cur.ref
+    end
     return { message = message:build(), focus_ref = state.cur and state.cur.ref,
         moved = moved, spoke_label = spoke, deferred = cur_deferred(graph, state) }
 end
@@ -209,6 +222,16 @@ local function build_and_process(overlay, command)
     local cur = state.cur
     if not cur or cur.key == D.last_spoken then return nil end
     D.last_spoken = cur.key
+    -- A handoff that lands on the very element the previous overlay just
+    -- spoke (switching to Steamodded's New Run tab from the tab strip hands
+    -- the menu to another overlay, cursor still on the strip) isn't news.
+    local handoff = D.handoff_ref
+    D.handoff_ref = nil
+    if cur.ref ~= nil and cur.ref == handoff then
+        D.last_ref = cur.ref
+        return nil
+    end
+    D.last_ref = cur.ref
     local node = graph.current.nodes[cur.key]
     if node and node.vtable.label then node.vtable.label(ctx) end
     return { message = message:build(), focus_ref = cur.ref, entered = true,
@@ -239,7 +262,10 @@ function D.tick(command)
             end
         end
     end
-    if D.active_last ~= active_id then D.last_spoken = nil end
+    if D.active_last ~= active_id then
+        D.last_spoken = nil
+        D.handoff_ref = D.last_ref
+    end
     D.active_last = active_id
 
     D._pending = (verdict == "pending") or false
@@ -248,7 +274,9 @@ function D.tick(command)
         return nil
     end
 
-    return build_and_process(overlay, command)
+    local res = build_and_process(overlay, command)
+    D.handoff_ref = nil   -- one-shot: only the first build after a handoff
+    return res
 end
 
 -- Dev introspection (F8): the active overlay as the mod sees it — nodes in

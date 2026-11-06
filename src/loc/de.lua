@@ -29,6 +29,7 @@ return {
         UP = "Hoch", DOWN = "Runter", LEFT = "Links", RIGHT = "Rechts",
         SPACE = "Leertaste", ESCAPE = "Escape", TAB = "Tab", BACKSPACE = "Rücktaste",
         CTRL = "Strg", SHIFT = "Umschalt", ALT = "Alt",
+        CMD = "Befehl", WIN = "Windows",
         UNBOUND = "(nicht belegt)",
     },
 
@@ -68,6 +69,7 @@ return {
         CONFIRM_UNLOCK = "Alles freischalten bestätigen",
         CONFIRM_ACTION = "{action} bestätigen",
         COMPLETED      = "abgeschlossen",
+        DISABLE_BLINDFOLD = "Wenn du Blindfold ausschaltest, gibt es nach dem Neustart des Spiels keine Sprachausgabe mehr. Zum Bestätigen erneut drücken.",
     },
 
     CONTAINER = {
@@ -81,6 +83,7 @@ return {
         SHOP        = "Laden",
         SHOP_GOODS  = "Gutscheine und Pakete",
         PACK        = "Paket",
+        OTHER = "Weitere Bedienelemente",
     },
 
     PACK = {
@@ -148,6 +151,7 @@ return {
         CONSUMABLE = "Verbrauchsgegenstand",
         CASHOUT = "Auszahlung",
         UI = "UI",
+        SCREEN = "Bildschirm",
         NONE = "Keine Puffer",
         EMPTY = "Puffer {buffer} ist leer",
         CURRENT = "{buffer}, {item}",
@@ -322,7 +326,15 @@ return {
         VIEW_CHANGES    = "Änderungen anzeigen",
         OPENING_DOCS    = "Dokumentation wird geöffnet.",
         OPENING_CHANGES = "Änderungen werden geöffnet.",
-        SPEECH_BACKEND  = "Sprachausgabe-Backend",
+        CAT_SCREEN_READERS = "Screenreader",
+        CAT_CLIPBOARD    = "Zwischenablage",
+        VOICE_UNAVAILABLE = "nicht verfügbar",
+        VOICE            = "Stimme",
+        VOICE_NAME       = "Stimme",
+        RATE             = "Geschwindigkeit",
+        VOLUME           = "Lautstärke",
+        PITCH            = "Tonhöhe",
+        NO_VOICE_OPTIONS = "Diese Stimme hat keine einstellbaren Optionen",
         BACKEND_AUTO    = "Automatisch (beste verfügbare)",
         SCORING         = "Wertung",
         FMT_CHIPS_GAIN  = "Ansage: erhaltene Chips",

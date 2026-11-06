@@ -5,6 +5,14 @@
 -- sprites, rows of six — matching each screen's visual matrix. Every item
 -- reads its name (or "Not discovered": the render is the "?" sprite) with
 -- the effect description as the deferred follow-up.
+--
+-- Steamodded rebuilds both pages: each blind is a stand-in Card (a blank
+-- base card wearing the blind's sprite, with config.blind) inside paged
+-- G.your_collection CardAreas, and the tags page sits in a nested UIBox
+-- (id your_collection_tags_contents) that swaps per page. The walk finds
+-- items in all three places — and descends into THAT box only: Run Info's
+-- Blinds tab also nests skip-tag sprites in a UIBox, and must stay with its
+-- own overlay (run_blinds).
 local require = ...
 local Id = require("overlay.id")
 local Message = require("ui.message")
@@ -15,15 +23,28 @@ local M = { id = "blind_gallery" }
 
 -- The gallery sprites (blind chips or tag sprites), in tree order (= the
 -- game's sorted order).
+local function is_item(o)
+    return type(o) == "table" and type(o.config) == "table"
+        and (o.config.blind ~= nil or o.config.tag ~= nil)
+end
+
 local function sprites()
     local out = {}
     local ov = G and G.OVERLAY_MENU
     if type(ov) ~= "table" or not ov.UIRoot then return out end
-    local function walk(n, depth)
-        if type(n) ~= "table" or depth > 20 then return end
+    local walk
+    walk = function(n, depth)
+        if type(n) ~= "table" or depth > 24 then return end
         local o = n.config and n.config.object
-        if type(o) == "table" and o.config and (o.config.blind or o.config.tag) then
+        if is_item(o) then
             out[#out + 1] = o
+        elseif type(o) == "table" and o.is and CardArea and o:is(CardArea) then
+            for _, c in ipairs(o.cards or {}) do
+                if is_item(c) then out[#out + 1] = c end
+            end
+        elseif type(o) == "table" and o.UIRoot
+            and n.config.id == "your_collection_tags_contents" then
+            walk(o.UIRoot, depth + 1)
         end
         local kids, maxn = n.children, 0
         if type(kids) ~= "table" then return end
@@ -39,6 +60,85 @@ local function sprites()
     end
     walk(ov.UIRoot, 0)
     return out
+end
+
+-- A panel's rendered text, one entry per visual row: a row is a UIT.R
+-- holding text with no deeper text row inside. Used for the blinds page's
+-- ante table, a single focus panel: a header row (ANTE / BASE) over one row
+-- per ante. When every row has the header's cell count, each cell reads
+-- under its header ("ANTE 3, BASE 2,600") — a bare "3, 2,600" runs the
+-- separator into the number's own commas.
+local function ordered_kids(n)
+    local kids, maxn = {}, 0
+    for k in pairs(n.children or {}) do
+        if type(k) == "number" and k > maxn then maxn = k end
+    end
+    for k = 1, maxn do
+        if n.children[k] ~= nil then kids[#kids + 1] = n.children[k] end
+    end
+    return kids
+end
+
+local function cell_texts(n, out, depth)
+    if type(n) ~= "table" or depth > 12 then return end
+    local c = n.config
+    if c and G.UIT and n.UIT == G.UIT.T then
+        local t = c.text
+        if type(t) == "number" then t = tostring(t) end
+        if type(t) == "string" and t:match("%S") then out[#out + 1] = t end
+    elseif c and type(c.object) == "table" and type(c.object.string) == "string"
+        and c.object.string:match("%S") then
+        out[#out + 1] = c.object.string
+    end
+    for _, ch in ipairs(ordered_kids(n)) do cell_texts(ch, out, depth + 1) end
+end
+
+local function has_text_row(n, depth)
+    if type(n) ~= "table" or depth > 12 then return false end
+    for _, ch in ipairs(ordered_kids(n)) do
+        if G.UIT and ch.UIT == G.UIT.R then
+            local t = {}
+            cell_texts(ch, t, 0)
+            if t[1] then return true end
+        end
+        if has_text_row(ch, depth + 1) then return true end
+    end
+    return false
+end
+
+local function text_rows(n, out, depth)
+    if type(n) ~= "table" or depth > 12 then return out end
+    if G.UIT and n.UIT == G.UIT.R and not has_text_row(n, 0) then
+        local t = {}
+        cell_texts(n, t, 0)
+        if t[1] then out[#out + 1] = t end
+        return out
+    end
+    for _, ch in ipairs(ordered_kids(n)) do text_rows(ch, out, depth + 1) end
+    return out
+end
+
+-- A read-only panel (no button / widget type) that renders several rows.
+local function multi_row_panel(n)
+    local c = n.config or {}
+    if c.button or (c.focus_args and c.focus_args.type) then return nil end
+    local rows = text_rows(n, {}, 0)
+    if #rows < 2 then return nil end
+    local head, tabular = rows[1], #rows[1] > 1
+    for i = 2, #rows do
+        if #rows[i] ~= #head then tabular = false end
+    end
+    local lines = {}
+    if tabular then
+        for i = 2, #rows do
+            local cells = {}
+            for j, v in ipairs(rows[i]) do cells[j] = head[j] .. " " .. v end
+            lines[#lines + 1] = table.concat(cells, ", ")
+        end
+    else
+        for i, r in ipairs(rows) do lines[i] = table.concat(r, ", ") end
+    end
+    return lines
 end
 
 function M:handler()
@@ -104,11 +204,23 @@ function M:build(b)
         b:end_row()
         i = i + per_row
     end
-    -- Whatever the mirror CAN reach on this screen (the Back button).
+    -- Whatever else the mirror reaches (Back; Steamodded's page cycle) —
+    -- minus the stand-in cards already listed above.
     local r = 0
     for _, n in ipairs(Mirror.gather({ G.OVERLAY_MENU })) do
-        r = r + 1
-        b:add_item(Id.referenced(n, "r:" .. r), Mirror.vtable_for(n))
+        if not is_item(n) then
+            r = r + 1
+            local lines = multi_row_panel(n)
+            if lines then
+                for j, line in ipairs(lines) do
+                    b:add_label(Id.structural("r:" .. r .. ":" .. j), function(ctx)
+                        ctx.message:fragment(Message.raw(line))
+                    end)
+                end
+            else
+                b:add_item(Id.referenced(n, "r:" .. r), Mirror.vtable_for(n))
+            end
+        end
     end
 end
 

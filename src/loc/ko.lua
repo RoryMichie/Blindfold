@@ -29,6 +29,7 @@ return {
         UP = "위", DOWN = "아래", LEFT = "왼쪽", RIGHT = "오른쪽",
         SPACE = "스페이스", ESCAPE = "Escape", TAB = "Tab", BACKSPACE = "Backspace",
         CTRL = "Ctrl", SHIFT = "Shift", ALT = "Alt",
+        CMD = "Command", WIN = "Windows",
         UNBOUND = "(할당 안 됨)",
     },
 
@@ -68,6 +69,7 @@ return {
         CONFIRM_UNLOCK = "모두 잠금 해제 확인",
         CONFIRM_ACTION = "{action} 확인",
         COMPLETED      = "완료",
+        DISABLE_BLINDFOLD = "Blindfold를 끄면 게임을 다시 시작한 뒤 음성 출력이 꺼집니다. 확인하려면 다시 누르세요.",
     },
 
     CONTAINER = {
@@ -81,6 +83,7 @@ return {
         SHOP        = "상점",
         SHOP_GOODS  = "바우처와 팩",
         PACK        = "팩",
+        OTHER = "기타 컨트롤",
     },
 
     PACK = {
@@ -148,6 +151,7 @@ return {
         CONSUMABLE = "소모품",
         CASHOUT = "정산",
         UI = "UI",
+        SCREEN = "화면",
         NONE = "버퍼 없음",
         EMPTY = "{buffer} 버퍼가 비어 있음",
         CURRENT = "{buffer}, {item}",
@@ -322,7 +326,15 @@ return {
         VIEW_CHANGES    = "변경 사항 보기",
         OPENING_DOCS    = "설명서를 여는 중입니다.",
         OPENING_CHANGES = "변경 사항을 여는 중입니다.",
-        SPEECH_BACKEND  = "음성 백엔드",
+        CAT_SCREEN_READERS = "화면 낭독기",
+        CAT_CLIPBOARD    = "클립보드",
+        VOICE_UNAVAILABLE = "사용 불가",
+        VOICE            = "음성",
+        VOICE_NAME       = "목소리",
+        RATE             = "속도",
+        VOLUME           = "음량",
+        PITCH            = "높낮이",
+        NO_VOICE_OPTIONS = "이 음성 엔진에는 조정할 수 있는 옵션이 없습니다",
         BACKEND_AUTO    = "자동(사용 가능한 최적)",
         SCORING         = "점수",
         FMT_CHIPS_GAIN  = "획득 칩 알림",
