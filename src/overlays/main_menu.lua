@@ -12,7 +12,10 @@ local require = ...
 local Id = require("overlay.id")
 local Mirror = require("overlays.menu_mirror")
 
-local M = { id = "main_menu" }
+-- extras: controls other mods put on the title screen in their own UIBox
+-- (Balatro Co-op's "Play together" panel, top left) get the "Other
+-- controls" row; the gather above only walks the game's own boxes.
+local M = { id = "main_menu", extras = true }
 
 function M:handler()
     if G.STAGE == G.STAGES.MAIN_MENU and not G.OVERLAY_MENU
